@@ -2,6 +2,7 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import os
 import random
+from unicodedata import digit
 
 class EDMBankApp:
     def __init__(self, main):
@@ -25,8 +26,8 @@ class EDMBankApp:
         self.card_cvv = f"{random.randint(0,999):03d}"  # random CVV
         self.card_expiry = "02/26"  # expiring date
 
-        # main frame that expands
-        self.main_container = tk.Frame(self.main, bg="#d9baef")
+        # main frame that expands (border padding)
+        self.main_container = tk.Frame(self.main, bg="#354f52")
         self.main_container.pack(fill='both', expand=True)
 
         # configure grid for scaling (with weight = 1 the content expands, if not it stays fixed)
@@ -47,6 +48,7 @@ class EDMBankApp:
         x = self.main.winfo_x() + self.main.winfo_width() // 2 - 150
         y = self.main.winfo_y() + self.main.winfo_height() // 2 - 75
         
+
         if message_type == "info":
             messagebox.showinfo(title, message, parent=self.main)
         elif message_type == "warning":
@@ -60,17 +62,20 @@ class EDMBankApp:
                 window.geometry(f"+{x}+{y}")
                 break
     
+    # function to generate a random card number (16 random characters starting with 4 or 5)
     def generate_card_number(self):
-        prefix = random.choice(['4', '5'])
-        other_digits = ''.join([str(random.randint(0, 9)) for _ in range(15)])
-        return prefix + other_digits
-    
+        # generate 16 random digits
+        digits = ''.join([str(random.randint(0, 9)) for _ in range(16)])
+        return digits
+
+    # hide all but last 4 digits of card number
     def format_card_number(self, number, show_full=False):
         if show_full:
             return ' '.join([number[i:i+4] for i in range(0, 16, 4)])
         else:
             return f"•••• •••• •••• {number[-4:]}"
     
+    # handle resizing for responsive design
     def on_resize(self, event):
         if hasattr(self, 'buttons_frame'):
             window_width = self.main.winfo_width()
@@ -82,6 +87,11 @@ class EDMBankApp:
                 self.switch_to_mobile_layout()
                 self.is_large_screen = False
     
+
+    # --------------------------------------------------------------------------
+
+
+    # switch layout to desktop (large screen)
     def switch_to_desktop_layout(self):
         for widget in self.buttons_frame.winfo_children():
             widget.destroy()
@@ -127,9 +137,10 @@ class EDMBankApp:
             ("⚙︎ ACCOUNT SETTINGS", self.settings, 3, 0)
         ]
         
+        # create buttons in a grid
         for text, command, row, col in buttons_data:
             btn = tk.Button(self.buttons_frame, text=text, font=('Arial', 11), 
-                           bg='white', fg='#333333', relief='flat',
+                           bg='#354f52', fg="#354f52", relief='flat',
                            height=2, command=command)
             btn.grid(row=row, column=col, padx=6, pady=6, sticky='nsew')
         
@@ -145,45 +156,57 @@ class EDMBankApp:
             self.card_holder_label.configure(text=self.logged_in_user)
         else:
             self.card_holder_label.configure(text="POPESCU IRINA-MARIA")
-    
+
+    # --------------------------------------------------------------------------
+
+    # create head bar with toggle menu, title and login button
     def create_top_menu(self):
-        top_frame = tk.Frame(self.main_container, bg='#f0f0f0', height=70)
+        # header frame
+        top_frame = tk.Frame(self.main_container, bg="#354f52", height=120)
         top_frame.grid(row=0, column=0, sticky='ew', padx=20, pady=10)
         top_frame.grid_propagate(False)
         top_frame.grid_columnconfigure(1, weight=1)
-        
+
+        # toggle menu
         self.dropdown_var = tk.StringVar()
         self.dropdown_var.set("Menu")
         dropdown = ttk.Combobox(top_frame, textvariable=self.dropdown_var, 
                                values=["Accounts", "Savings", "Settings", "Cards", "Payments"], 
                                state="readonly", width=12)
         dropdown.grid(row=0, column=0, sticky='w', padx=(0, 10))
-        
-        title_label = tk.Label(top_frame, text="EDM Bank", font=('Arial', 10, 'bold'), 
-                              bg='#f0f0f0', fg='#333333')
+
+        # EDM Bank title
+        title_label = tk.Label(top_frame, text="EDM Bank", font=('Arial', 30, 'bold'),
+                              bg='#354f52', fg="#FFFFFF")
         title_label.grid(row=0, column=1, sticky='ew')
-        
+
+        # login button
         login_btn = tk.Button(top_frame, text="LOGIN", font=('Arial', 12, 'bold'), 
-                             bg='#6a0dad', fg='white', relief='flat', padx=25,
+                             bg="#354f52", fg='white', relief='flat', padx=25,
                              height=2, command=self.login)
         login_btn.grid(row=0, column=2, sticky='e', padx=(10, 0))
     
     def create_main_content(self):
-        main_frame = tk.Frame(self.main_container, bg='#f0f0f0')
+        # background
+        main_frame = tk.Frame(self.main_container, bg="#cad2c5")
         main_frame.grid(row=1, column=0, sticky='nsew', padx=20, pady=10)
         
+        # configure grid for scaling (weight=1 makes it expand)
         main_frame.grid_rowconfigure(1, weight=1)
         main_frame.grid_columnconfigure(0, weight=1)
         
+        # create card
         self.create_card(main_frame)
 
-        sold_btn = tk.Button(main_frame, text="VIEW BALANCE", font=('Arial', 14, 'bold'),
-                            bg='#6a0dad', fg='white', relief='flat',
+        # sold button - VIEW BALANCE
+        sold_btn = tk.Button(main_frame, text="VIEW BALANCE", font=('Open Sans', 20, 'bold'),
+                            bg='#52796f', fg='#ffffff', relief='flat',
                             height=3, command=self.toggle_sold)
         sold_btn.grid(row=1, column=0, sticky='ew', pady=15)
-        
-        self.sold_label = tk.Label(main_frame, text=self.sold_amount, 
-                                  font=('Arial', 20, 'bold'), bg='#f0f0f0', fg='#6a0dad')
+
+        # sold amount label
+        self.sold_label = tk.Label(main_frame, text=self.sold_amount,
+                                  font=('Arial', 20, 'bold'), bg='#f0f0f0', fg='#2f3e46')
         self.sold_label.grid(row=2, column=0, pady=10)
         self.sold_label.grid_remove()
         
@@ -192,45 +215,61 @@ class EDMBankApp:
         
         self.switch_to_mobile_layout()
     
+    # --------------------------------------------------------------------------
+
     def create_card(self, parent):
-        self.card_frame = tk.Frame(parent, bg='#6a0dad', height=160, width=300)
+        #borders of the card
+        
+        # TODO: replace with image later
+        self.card_frame = tk.Frame(parent, bg="#2f3e46", height=200, width=400)
         self.card_frame.grid(row=0, column=0, sticky='n', pady=20)
         self.card_frame.grid_propagate(False)
-        
-        card_content = tk.Frame(self.card_frame, bg='#6a0dad')
+
+        # center of the card
+        card_content = tk.Frame(self.card_frame, bg='#2f3e46')
         card_content.place(relx=0.5, rely=0.5, anchor='center', relwidth=0.9, relheight=0.8)
-        
-        top_row = tk.Frame(card_content, bg='#6a0dad')
+
+        top_row = tk.Frame(card_content, bg='#2f3e46')
         top_row.pack(fill='x', pady=(0, 15))
         
         bank_label = tk.Label(top_row, text="EDM Bank", font=('Arial', 16, 'bold'), 
-                             bg='#6a0dad', fg='white')
+                             bg='#2f3e46', fg='white')
         bank_label.pack(side='left')
         
+        # chip icon
+        # TODO: replace with image later
         chip_label = tk.Label(top_row, text="◘ Chip", font=('Arial', 12), 
-                             bg='#6a0dad', fg='white')
+                             bg='#2f3e46', fg='white')
         chip_label.pack(side='right')
         
+        # card number
         self.card_number_label = tk.Label(card_content, text=self.format_card_number(self.card_number), 
-                              font=('Arial', 18, 'bold'), bg='#6a0dad', fg='white')
+                              font=('Arial', 18, 'bold'), bg='#2f3e46', fg='white')
         self.card_number_label.pack(expand=True)
-        
-        bottom_row = tk.Frame(card_content, bg='#6a0dad')
+
+        # bottom row
+        bottom_row = tk.Frame(card_content, bg='#2f3e46')
         bottom_row.pack(fill='x', pady=(15, 0))
 
+        # card holder name
         self.card_holder_label = tk.Label(bottom_row, text="POPESCU IRINA-MARIA", font=('Arial', 12),
-                                           bg='#6a0dad', fg='white')
+                                           bg='#2f3e46', fg='white')
         self.card_holder_label.pack(side='left')
         
+        # card expiry date
         expiry_label = tk.Label(bottom_row, text="12/25", font=('Arial', 12), 
-                               bg='#6a0dad', fg='white')
+                               bg='#2f3e46', fg='white')
         expiry_label.pack(side='right')
-    
+
+    # --------------------------------------------------------------------------
+
     def create_bottom_menu(self):
-        nav_frame = tk.Frame(self.main_container, bg='#ffffff', height=80)
+        nav_frame = tk.Frame(self.main_container, bg="#7ecd9d", height=80)
         nav_frame.grid(row=2, column=0, sticky='ew', padx=0, pady=0)
         nav_frame.grid_propagate(False)
         
+        
+        # TODO: replace with image later
         nav_buttons = [
             ("⌂", "HOME", self.go_home),
             ("🖨", "CARDS", self.show_cards),
@@ -239,21 +278,25 @@ class EDMBankApp:
             ("🗣", "CHAT", self.open_chat)
         ]
         
+        #  bottom header
         for i, (icon, text, command) in enumerate(nav_buttons):
-            btn_frame = tk.Frame(nav_frame, bg='#ffffff')
+            btn_frame = tk.Frame(nav_frame, bg="#354f52")
             btn_frame.pack(side='left', expand=True, fill='both')
             
+            # icon and text labels
             icon_label = tk.Label(btn_frame, text=icon, font=('Arial', 20), 
-                                 bg='#ffffff', fg='#6a0dad', cursor='hand2')
+                                 bg="#fa9c9c", fg="#323A87", cursor='hand2')
             icon_label.pack(pady=(10, 2))
             
             text_label = tk.Label(btn_frame, text=text, font=('Arial', 9, 'bold'), 
-                                 bg='#ffffff', fg='#333333', cursor='hand2')
+                                 bg="#354f52", fg='#ffffff', cursor='hand2')
             text_label.pack(pady=(0, 10))
             
             for widget in [btn_frame, icon_label, text_label]:
                 widget.bind("<Button-1>", lambda e, cmd=command: cmd())
     
+    # --------------------------------------------------------------------------
+
     def toggle_sold(self):
         if self.sold_visible:
             self.sold_label.grid_remove()
@@ -261,7 +304,9 @@ class EDMBankApp:
         else:
             self.sold_label.grid()
             self.sold_visible = True
-    
+
+    # --------------------------------------------------------------------------
+
     def toggle_card_data(self):
         if not self.card_data_visible:
             self.card_data_visible = True
@@ -278,7 +323,9 @@ class EDMBankApp:
             self.card_data_visible = False
             self.update_card_display()
             self.show_message("Card Details", "Card details have been hidden", "info")
-    
+
+    # --------------------------------------------------------------------------
+
     def login(self):
         """Login window centered on application"""
         login_window = tk.Toplevel(self.main)
@@ -294,7 +341,7 @@ class EDMBankApp:
         y = self.main.winfo_y() + self.main.winfo_height() // 2 - 100
         login_window.geometry(f"300x200+{x}+{y}")
         
-        # Impedă redimensionarea
+        # no resizing allowed
         login_window.resizable(False, False)
 
         tk.Label(login_window, text="Username:", font=('Arial', 12),
@@ -305,6 +352,7 @@ class EDMBankApp:
         username_entry.insert(0, self.logged_in_user)
         username_entry.focus_set()  # Focus on text field
         
+        # login function
         def do_login():
             username = username_entry.get().strip().upper()
             if username:
@@ -315,6 +363,7 @@ class EDMBankApp:
             else:
                 self.show_message("Error", "Please enter a username!", "error")
 
+        # bind Enter key to login
         def on_enter(event):
             do_login()
         
