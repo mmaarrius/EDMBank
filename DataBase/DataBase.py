@@ -8,50 +8,48 @@ from firebase_admin import firestore
 from faker import Faker
 from datetime import datetime
 from user_management.user import User
+from user_management.credit_card import Card
+from user_management.user_credentials import UserCredentials
+from user_management.payment_details import PaymentsHistory
 
 class Database:
     def __init__(self):
-        self.initDadabase()
+        self.init_dadabase()
 
-    def initDadabase(self):
+    def init_dadabase(self):
         key_path = os.path.join(os.path.dirname(__file__),"edmbank-7fd19-firebase-adminsdk-fbsvc-97c017e5cd.json")
         if not firebase_admin._apps:
             cred = credentials.Certificate(key_path)
             firebase_admin.initialize_app(cred)
         self.db = firestore.client()
 
-    def addUser(self, user : User):
-        current_year = datetime.now().year
-        year_first = current_year + 1
-        year_last = current_year + 20
-        rand_year = random.randrange(year_first, year_last)
-        rand_month = random.randrange(1,12)
-        if rand_month < 10:
-            expiry_date = "0" + str(rand_month) + "/" + str(rand_year%100) 
-        else:
-            expiry_date = str(rand_month) + "/" + str(rand_year%100)
-        
-        Password = user.credentials.password
+
+    def add_user(self, user : User):
+        """Add a new user to the database."""
+        password = user.credentials.password
         username = user.credentials.username
         CardDigit = user.card.number
         CVV = user.card.cvv
         email = user.credentials.email
+        history = user.payment_history
     
         Password_bytes = str(Password).encode()
         salt = bcrypt.gensalt()
         Password = bcrypt.hashpw(Password_bytes, salt)
         Password = Password.decode()
 
-        user_data = {
-            "Name" : username,
-            "Password_hash" : Password,
-            "Card_Number" : CardDigit,
-            "CVV" : CVV,
-            "Expiry_date" : expiry_date,
-            "Sold" : sum,
-            "Email" : email,
-            "Istoric" : []
-        }
+        # TODO : all the necessary data is found in the User object (card, history, etc..).
+        # Database should memorise all the fields
+        # user_data = {
+        #     "Name" : username,
+        #     "Password_hash" : Password,
+        #     "Card_Number" : CardDigit,
+        #     "CVV" : CVV,
+        #     "Expiry_date" : expiry_date,
+        #     "Sold" : sum,
+        #     "Email" : email,
+        #     "Istoric" : []
+        # }
         self.db.collection("Users").document(username).set(user_data)
 
     def checkUserLogin(self, username, Password):
@@ -64,21 +62,12 @@ class Database:
         if bcrypt.checkpw(Password.encode(), stored_hash.encode()):
             return True
         else:
-            return False  
-
-    def addHistory(self, username, amount, receiver):
-        doc_ref = self.db.collection("Users").document(username)
-        doc = doc_ref.get()
-
-        entry = "You have sent " + str(amount) + " to " + receiver+ "."
-        doc_ref.update({"Istoric" : firestore.ArrayUnion([entry])})
+            return False
 
     def getData(self, username, date):
         doc_ref = self.db.collection("Users").document(username)
         doc = doc_ref.get()
-        #date este o valoare care indica
-        #field ul care urmeaza sa fie returnat
-        # card - nr =1, cvv = 2, expiry date = 3, sold = 4, email =5, istoric = 6
+        
         if date == 1:
             return doc.get("Card_Number")
         elif date == 2:
@@ -95,19 +84,16 @@ class Database:
             return None
         
 
-    def deleteUser(self, username):
+    def delete_user(self, username):
+        """Delete the user from the database."""
         doc_ref = self.db.collection("Users").document(username)
         doc = doc_ref.get()
         doc_ref.delete()
 
-    def modifyUser(self, username, varianta, modificator):
-        doc_ref = self.db.collection("Users").document(username)
-        doc = doc_ref.get()
-        if varianta == 1: # vrea sa modifice username
-            data = doc.to_dict()
-            data["Name"] = modificator
-            self.db.collection("Users").document(modificator).set(data)
-            doc_ref.delete()
+    def modify_user(self, user: User):
+        """A simple first-step method to modify any user field in the database."""
+        self.deleteUser(user.username)
+        self.addUser(user)
 
-        if varianta == 2: # vrea sa modifice email
-            doc_ref.update({"Email" : modificator})
+    # TODO : should return an User object
+    # def getUser(self, username): 
