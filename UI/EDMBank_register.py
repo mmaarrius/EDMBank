@@ -1,0 +1,262 @@
+import tkinter as tk
+from tkinter import messagebox
+from EDMBank_keyboard import AlphaNumericKeyboard 
+
+class EDMBankRegister:
+    def __init__(self, main, login_window, on_success_callback):
+        self.main = main
+        self.main.title("EDM Bank - Register")
+        self.login_window = login_window 
+        self.on_success_callback = on_success_callback # Store the success callback
+        
+        # variables for password management
+        self.entered_password = ""
+        self.entered_confirm_password = ""
+        self.active_field = None 
+        
+        # main container
+        self.main_container = tk.Frame(self.main, bg="#354f52")
+        self.main_container.pack(fill='both', expand=True, padx=20, pady=20)
+        
+        # Keypad container (will hold either numeric or alphanumeric keyboard)
+        self.keyboard_container = tk.Frame(self.main_container, bg="#354f52")
+        
+        # Separate frames for each keyboard type
+        self.numeric_frame = tk.Frame(self.keyboard_container, bg="#354f52")
+        self.alphanum_frame = tk.Frame(self.keyboard_container, bg="#354f52")
+        
+        self.create_numeric_keypad(self.numeric_frame)
+        
+        self.create_register_interface()
+
+    # --------------------------------------------------------------------------
+
+    # helper function to create standard text/email input field
+    def create_entry_field(self, parent, label_text, field_name):
+        frame = tk.Frame(parent, bg="#354f52")
+        frame.pack(pady=10, fill='x')
+        tk.Label(frame, text=label_text, font=('Arial', 14), 
+                bg="#354f52", fg="white").pack(anchor='w')
+        
+        entry = tk.Entry(frame, font=('Arial', 14), 
+                         bg='white', fg='#2f3e46', relief='flat')
+        entry.pack(fill='x', pady=(5, 0), ipady=5)
+        # Bind FocusIn to set active field and show alphanumeric keyboard
+        entry.bind("<FocusIn>", lambda e, name=field_name: self.set_active_field(name))
+        return entry
+    
+    # --------------------------------------------------------------------------
+
+    # helper function to create password fields
+    def create_password_field(self, parent, label_text, field_name):
+        container = tk.Frame(parent, bg="#354f52")
+        container.pack(pady=10, fill='x')
+        tk.Label(container, text=label_text, font=('Arial', 14), 
+                bg="#354f52", fg="white").pack(anchor='w')
+        
+        display = tk.Label(container, text="", 
+                           font=('Arial', 24, 'bold'), bg="#2f3e46", 
+                           fg="white", height=1, anchor='w', padx=10)
+        display.pack(fill='x', pady=(5, 0))
+        # Bind click to select this field and show the numeric keypad
+        display.bind("<Button-1>", lambda e, name=field_name: self.set_active_field(name))
+        return display, container
+    
+    # --------------------------------------------------------------------------
+        
+    def create_register_interface(self):
+        # EDM Bank title
+        title_label = tk.Label(self.main_container, text="Register Account", 
+                              font=('Arial', 30, 'bold'), bg="#354f52", fg="white")
+        title_label.pack(pady=(30, 20))
+        
+        # Container for form elements
+        self.form_frame = tk.Frame(self.main_container, bg="#354f52")
+        self.form_frame.pack(fill='x', padx=50)
+
+        # Username Input (Alphanumeric keyboard)
+        self.username_entry = self.create_entry_field(self.form_frame, "Username:", 'username')
+        # Email Input (Alphanumeric keyboard)
+        self.email_entry = self.create_entry_field(self.form_frame, "Email:", 'email')
+        
+        # Password Displays (Numeric keypad)
+        self.password_display, self.password_container = self.create_password_field(self.form_frame, "Password (6 digits):", 'password')
+        self.confirm_password_display, self.confirm_password_container = self.create_password_field(self.form_frame, "Confirm Password:", 'confirm_password')
+
+        # Initialize alphanumeric keyboard (must be done after entry widgets are created)
+        self.alphanum_keyboard = AlphaNumericKeyboard(self.alphanum_frame, self.username_entry)
+        
+        # Back to Login Button (positioned above the dynamic keyboard area)
+        back_btn = tk.Button(self.main_container, text="← Back to Login", 
+                             font=('Arial', 12), bg="#354f52", fg="#cad2c5", 
+                             relief='flat', command=self.back_to_login)
+        back_btn.pack(pady=(10, 20))
+        
+        # Pack the main keyboard container at the bottom
+        self.keyboard_container.pack(fill='both', expand=True, padx=50)
+        
+        # Set initial focus to username and show alphanumeric keyboard
+        self.username_entry.focus_set()
+        self.set_active_field('username') 
+    
+    # --------------------------------------------------------------------------
+        
+    def create_numeric_keypad(self, parent):
+        # Configure grid for 4x3 keypad
+        parent.grid_columnconfigure(0, weight=1)
+        parent.grid_columnconfigure(1, weight=1)
+        parent.grid_columnconfigure(2, weight=1)
+        parent.grid_rowconfigure(0, weight=1)
+        parent.grid_rowconfigure(1, weight=1)
+        parent.grid_rowconfigure(2, weight=1)
+        parent.grid_rowconfigure(3, weight=1)
+        
+        buttons = [
+            ('1', 0, 0), ('2', 0, 1), ('3', 0, 2),
+            ('4', 1, 0), ('5', 1, 1), ('6', 1, 2),
+            ('7', 2, 0), ('8', 2, 1), ('9', 2, 2),
+            ('Clear', 3, 0), ('0', 3, 1), ('REGISTER', 3, 2)
+        ]
+        
+        for text, row, col in buttons:
+            if text == '↵':
+                bg_color = '#588157'
+                fg_color = 'white'
+                command = self.attempt_register
+                font_style = ('Arial', 18, 'bold')
+            elif text == 'Clear':
+                bg_color = '#6f1d1b'
+                fg_color = 'white'
+                command = self.clear_active_password
+                font_style = ('Arial', 18, 'bold')
+            else:
+                bg_color = '#84a98c'
+                fg_color = '#2f3e46'
+                command = lambda x=text: self.add_digit(x)
+                font_style = ('Arial', 20, 'bold')
+            
+            btn = tk.Button(parent, text=text, font=font_style,
+                           bg=bg_color, fg=fg_color, relief='flat',
+                           command=command)
+            btn.grid(row=row, column=col, padx=5, pady=5, sticky='nsew')
+            
+    # ----------------------------------------------------------------------
+
+    def set_active_field(self, field_name):
+        self.active_field = field_name
+        
+        # hide both frames first
+        self.numeric_frame.pack_forget()
+        self.alphanum_frame.pack_forget()
+        
+        # reset visual state of password fields
+        self.password_display.config(relief='flat', bg='#2f3e46')
+        self.confirm_password_display.config(relief='flat', bg='#2f3e46')
+        
+        if field_name in ['password', 'confirm_password']:
+            # highlight active field and show numeric keypad
+            display = self.password_display if field_name == 'password' else self.confirm_password_display
+            display.config(relief='sunken', bg='#2f3e46')
+            self.numeric_frame.pack(fill='both', expand=True)
+            self.main_container.focus_set()
+
+        elif field_name in ['username', 'email']:
+            # set target entry for alphanumeric keyboard and show it
+            target_entry = self.username_entry if field_name == 'username' else self.email_entry
+            self.alphanum_keyboard.target_entry = target_entry
+            self.alphanum_frame.pack(fill='both', expand=True)
+            target_entry.focus_set()
+
+    def add_digit(self, digit):
+        if self.active_field == 'password':
+            if len(self.entered_password) < 6:
+                self.entered_password += digit
+        elif self.active_field == 'confirm_password':
+            if len(self.entered_confirm_password) < 6:
+                self.entered_confirm_password += digit
+        else:
+            messagebox.showwarning("Input Error", "Please click a Password field to enter digits.", parent=self.main)
+            
+        self.update_password_displays()
+
+    def clear_active_password(self):
+        if self.active_field == 'password':
+            self.entered_password = ""
+        elif self.active_field == 'confirm_password':
+            self.entered_confirm_password = ""
+            
+        self.update_password_displays()
+    
+    def update_password_displays(self):
+        # show dots for entered digits
+        pass_text = "•" * len(self.entered_password)
+        self.password_display.config(text=pass_text)
+        
+        confirm_pass_text = "•" * len(self.entered_confirm_password)
+        self.confirm_password_display.config(text=confirm_pass_text)
+
+    # ----------------------------------------------------------------------
+
+    def attempt_register(self):
+        username = self.username_entry.get().strip()
+        email = self.email_entry.get().strip()
+        password = self.entered_password
+        confirm_password = self.entered_confirm_password
+
+        # check if all fields are completed
+        if not all([username, email, password, confirm_password]):
+            # 💡 CORRECT: This is the error message for incomplete fields
+            messagebox.showerror("Registration Error", "All fields must be completed in order to register to EDM Bank", parent=self.main)
+            return
+
+        # password match
+        if password != confirm_password:
+            messagebox.showerror("Registration Error", "Password and Confirm Password do not match!", parent=self.main)
+            self.clear_active_password()
+            self.set_active_field('password')
+            return
+            
+        # password length
+        if len(password) != 6:
+            messagebox.showerror("Registration Error", "Password must be exactly 6 digits.", parent=self.main)
+            return
+            
+        # email format
+        if '@' not in email or '.' not in email:
+            messagebox.showerror("Registration Error", "Please enter a valid email address.", parent=self.main)
+            return
+
+        # if all validations pass, proceed with registration
+        messagebox.showinfo("Registration Successful", 
+                            f"Account created for {username} ({email}). Proceeding to main app.", 
+                            parent=self.main)
+        
+        # transfer geometry from register window (self.main) to the hidden login window (self.login_window) before destroying self.main.
+        self.main.update_idletasks()
+        x = self.main.winfo_x()
+        y = self.main.winfo_y()
+        width = self.main.winfo_width()
+        height = self.main.winfo_height()
+        
+        self.login_window.geometry(f"{width}x{height}+{x}+{y}")
+        
+        # destroy registration window 
+        self.main.destroy() 
+        # call the success callback (which is start_main_app from launcher)
+        self.on_success_callback(username.upper(), self.login_window)
+
+    def back_to_login(self):
+        # capture size/position of registration window
+        self.main.update_idletasks()
+        x = self.main.winfo_x()
+        y = self.main.winfo_y()
+        width = self.main.winfo_width()
+        height = self.main.winfo_height()
+
+        # apply size/position to the hidden login window
+        self.login_window.geometry(f"{width}x{height}+{x}+{y}")
+        
+        # destroy the register window
+        self.main.destroy() 
+        # un-hide the login window
+        self.login_window.deiconify()

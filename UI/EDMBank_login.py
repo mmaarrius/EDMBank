@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import messagebox
+from EDMBank_register import EDMBankRegister # Import the register class
 
 class EDMBankLogin:
     def __init__(self, main, on_success_callback):
@@ -12,16 +13,14 @@ class EDMBankLogin:
         screen_height = main.winfo_screenheight()
         
         # START WITH SMALLER SIZE THAT FITS ON SCREEN BUT KEEP 9:16 ASPECT RATIO
-        max_width = min(990, screen_width)  # Ensure it fits with margin
-        max_height = min(1760, screen_height - 100)  # Ensure it fits with margin
+        max_width = min(990, screen_width)
+        max_height = min(1760, screen_height - 100)
 
         # Calculate proportional size maintaining 9:16 aspect ratio
         if max_width / max_height > 9/16:
-            # Height is limiting factor
             initial_width = int(max_height * 9/16)
             initial_height = max_height
         else:
-            # Width is limiting factor
             initial_width = max_width
             initial_height = int(max_width * 16/9)
             
@@ -29,12 +28,10 @@ class EDMBankLogin:
         x = (screen_width - initial_width) // 2
         y = (screen_height - initial_height) // 2
         self.main.geometry(f"{initial_width}x{initial_height}+{x}+{y}")
-        self.main.minsize(300, 500)  # minimum reasonable size
-        # allow maximizing
+        self.main.minsize(300, 500)
         self.main.configure(bg="#354f52")
 
         # password
-        # the correct password is 6 zeros
         self.correct_password = "000000"
         self.entered_password = ""
 
@@ -81,6 +78,12 @@ class EDMBankLogin:
                                         font=('Arial', 24, 'bold'), bg="#2f3e46", 
                                         fg="white", width=15, height=2)
         self.password_display.pack(fill='x', pady=(10, 0))
+        
+        # register button added BEFORE the keypad frame
+        register_btn = tk.Button(self.main_container, text="Don't have an account? Register here", 
+                                font=('Arial', 12), bg="#354f52", fg="white", 
+                                relief='flat', command=self.open_register_window)
+        register_btn.pack(pady=(0, 20))
 
         # numeric keypad frame
         keypad_frame = tk.Frame(self.main_container, bg="#354f52")
@@ -100,19 +103,19 @@ class EDMBankLogin:
             ('1', 0, 0), ('2', 0, 1), ('3', 0, 2), # the other indices are row, column
             ('4', 1, 0), ('5', 1, 1), ('6', 1, 2),
             ('7', 2, 0), ('8', 2, 1), ('9', 2, 2),
-            ('Clear', 3, 0), ('0', 3, 1), ('↵', 3, 2)
+            ('⌫', 3, 0), ('0', 3, 1), ('↵', 3, 2)
         ]
         
         for text, row, col in buttons:
-            if text == '↵':  # Enter button
+            if text == '↵':
                 bg_color = '#588157'
                 fg_color = '#cad2c5'
                 command = self.check_password
-            elif text == 'Clear':  # Clear button
+            elif text == '⌫':
                 bg_color = '#6f1d1b'
                 fg_color = '#cad2c5'
                 command = self.clear_password
-            else:  # Number buttons
+            else:
                 bg_color = '#84a98c'
                 fg_color = '#2f3e46'
                 command = lambda x=text: self.add_digit(x)
@@ -155,3 +158,23 @@ class EDMBankLogin:
         else:
             messagebox.showerror("Login Failed", "Incorrect password or username! Please try again.", parent=self.main)
             self.clear_password()
+  
+    # --------------------------------------------------------------------------
+
+    def open_register_window(self):
+        # hide the login window
+        self.main.withdraw() 
+        
+        # create a new top-level window for registration
+        register_root = tk.Toplevel(self.main)
+        
+        # calculate size and position to match the login window
+        self.main.update_idletasks()
+        x = self.main.winfo_x()
+        y = self.main.winfo_y()
+        width = self.main.winfo_width()
+        height = self.main.winfo_height()
+        register_root.geometry(f"{width}x{height}+{x}+{y}")
+        register_root.minsize(300, 500)
+        
+        EDMBankRegister(register_root, self.main, self.on_success_callback)

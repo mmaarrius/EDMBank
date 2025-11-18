@@ -6,9 +6,10 @@ from unicodedata import digit
 
 class EDMBankApp:
     # self = this (Java refference :)) )
-    def __init__(self, main):
+    def __init__(self, main, relauch_login_callback=None): # New argument
         self.main = main # a root window
         self.main.title("EDM Bank")
+        self.relauch_login_callback = relauch_login_callback # Store the callback
 
         # initial dimensions for mobile: FORMAT 9 X 16 - RESPONSIVE
         screen_width = main.winfo_screenwidth()
@@ -207,9 +208,10 @@ class EDMBankApp:
         title_label.grid(row=0, column=1, sticky='ew')
 
         # login button
-        login_btn = tk.Button(top_frame, text="LOGIN", font=('Arial', 12, 'bold'), 
+        # Changed text to LOGOUT and command to the new logout method
+        login_btn = tk.Button(top_frame, text="LOGOUT", font=('Arial', 12, 'bold'), 
                              bg="#354f52", fg='white', relief='flat', padx=25,
-                             height=2, command=self.login)
+                             height=2, command=self.logout_and_relaunch_login)
         login_btn.grid(row=0, column=2, sticky='e', padx=(10, 0))
 
     # --------------------------------------------------------------------------
@@ -359,8 +361,16 @@ class EDMBankApp:
 
     # --------------------------------------------------------------------------
 
-    def login(self):
-        """Login window centered on application"""
+    def logout_and_relaunch_login(self):
+        """Destroys the main app and relaunches the login screen."""
+        if self.relauch_login_callback:
+            self.relauch_login_callback()
+        else:
+             # Fallback: if launched standalone, just show the in-app login
+             self.show_in_app_login() 
+             
+    def show_in_app_login(self):
+        """Login window centered on application (used as fallback or for user switching)"""
         login_window = tk.Toplevel(self.main)
         login_window.title("Login EDM Bank")
         # made login window responsive
@@ -448,5 +458,6 @@ class EDMBankApp:
 
 if __name__ == "__main__":
     main = tk.Tk()
-    app = EDMBankApp(main)
+    # Provide a simple callback for standalone testing
+    app = EDMBankApp(main, relauch_login_callback=lambda: print("Logout called in standalone mode."))
     main.mainloop()
