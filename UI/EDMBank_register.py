@@ -40,7 +40,7 @@ class EDMBankRegister:
         
         entry = tk.Entry(frame, font=('Arial', 14), 
                          bg='white', fg='#2f3e46', relief='flat')
-        entry.pack(fill='x', pady=(5, 0), ipady=5)
+        entry.pack(fill='x', pady=(5, 0), ipady=12)
         # Bind FocusIn to set active field and show alphanumeric keyboard
         entry.bind("<FocusIn>", lambda e, name=field_name: self.set_active_field(name))
         return entry
@@ -57,7 +57,7 @@ class EDMBankRegister:
         display = tk.Label(container, text="", 
                            font=('Arial', 24, 'bold'), bg="#2f3e46", 
                            fg="white", height=1, anchor='w', padx=10)
-        display.pack(fill='x', pady=(5, 0))
+        display.pack(fill='x', pady=(5, 0), ipady=12)
         # Bind click to select this field and show the numeric keypad
         display.bind("<Button-1>", lambda e, name=field_name: self.set_active_field(name))
         return display, container
@@ -115,7 +115,7 @@ class EDMBankRegister:
             ('1', 0, 0), ('2', 0, 1), ('3', 0, 2),
             ('4', 1, 0), ('5', 1, 1), ('6', 1, 2),
             ('7', 2, 0), ('8', 2, 1), ('9', 2, 2),
-            ('Clear', 3, 0), ('0', 3, 1), ('REGISTER', 3, 2)
+            ('⌫', 3, 0), ('0', 3, 1), ('↵', 3, 2)
         ]
         
         for text, row, col in buttons:
@@ -124,7 +124,7 @@ class EDMBankRegister:
                 fg_color = 'white'
                 command = self.attempt_register
                 font_style = ('Arial', 18, 'bold')
-            elif text == 'Clear':
+            elif text == '⌫':
                 bg_color = '#6f1d1b'
                 fg_color = 'white'
                 command = self.clear_active_password
@@ -153,6 +153,10 @@ class EDMBankRegister:
         self.password_display.config(relief='flat', bg='#2f3e46')
         self.confirm_password_display.config(relief='flat', bg='#2f3e46')
         
+        # Reset visual state of entry fields
+        self.username_entry.config(relief='flat')
+        self.email_entry.config(relief='flat')
+        
         if field_name in ['password', 'confirm_password']:
             # highlight active field and show numeric keypad
             display = self.password_display if field_name == 'password' else self.confirm_password_display
@@ -163,6 +167,7 @@ class EDMBankRegister:
         elif field_name in ['username', 'email']:
             # set target entry for alphanumeric keyboard and show it
             target_entry = self.username_entry if field_name == 'username' else self.email_entry
+            target_entry.config(relief='sunken')
             self.alphanum_keyboard.target_entry = target_entry
             self.alphanum_frame.pack(fill='both', expand=True)
             target_entry.focus_set()
@@ -180,6 +185,7 @@ class EDMBankRegister:
         self.update_password_displays()
 
     def clear_active_password(self):
+        # Clears the active password field
         if self.active_field == 'password':
             self.entered_password = ""
         elif self.active_field == 'confirm_password':
@@ -205,25 +211,27 @@ class EDMBankRegister:
 
         # check if all fields are completed
         if not all([username, email, password, confirm_password]):
-            # 💡 CORRECT: This is the error message for incomplete fields
-            messagebox.showerror("Registration Error", "All fields must be completed in order to register to EDM Bank", parent=self.main)
+            # UPDATED WARNING MESSAGE
+            messagebox.showerror("Registration Error", "You must complete all the requested fields", parent=self.main)
             return
 
         # password match
         if password != confirm_password:
-            messagebox.showerror("Registration Error", "Password and Confirm Password do not match!", parent=self.main)
+            # UPDATED WARNING MESSAGE
+            messagebox.showerror("Registration Error", "You entered 2 different passwords", parent=self.main)
             self.clear_active_password()
             self.set_active_field('password')
             return
             
-        # password length
+        # password length (keeping this standard check)
         if len(password) != 6:
             messagebox.showerror("Registration Error", "Password must be exactly 6 digits.", parent=self.main)
             return
             
         # email format
         if '@' not in email or '.' not in email:
-            messagebox.showerror("Registration Error", "Please enter a valid email address.", parent=self.main)
+            # UPDATED WARNING MESSAGE
+            messagebox.showerror("Registration Error", "The entered email is not valid", parent=self.main)
             return
 
         # if all validations pass, proceed with registration

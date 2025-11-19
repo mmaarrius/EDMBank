@@ -2,6 +2,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import os
 import random
+# IMPORTS NEEDED FOR IMAGES
+from PIL import Image, ImageTk 
 from unicodedata import digit
 
 class EDMBankApp:
@@ -46,6 +48,11 @@ class EDMBankApp:
         self.card_number = self.generate_card_number()  # generate unique card number
         self.card_cvv = f"{random.randint(0,999):03d}"  # random CVV
         self.card_expiry = "02/26"  # expiring date
+        
+        # 🆕 ADDED: REFERENCE TO HOLD IMAGES FOR BOTTOM MENU (IMPORTANT!)
+        self.nav_images = [] 
+        # reference to hold the logo image for the top menu
+        self.top_logo_image = None
 
         # main frame that expands (border padding)
         self.main_container = tk.Frame(self.main, bg="#354f52")
@@ -202,13 +209,34 @@ class EDMBankApp:
                                state="readonly", width=12)
         dropdown.grid(row=0, column=0, sticky='w', padx=(0, 10))
 
-        # EDM Bank title
-        title_label = tk.Label(top_frame, text="EDM Bank", font=('Arial', 30, 'bold'),
-                              bg='#354f52', fg="#FFFFFF")
-        title_label.grid(row=0, column=1, sticky='ew')
+        # --- EDM Bank title (replaced with image logo) ---
+        try:
+            # load and resize the image
+            original_image = Image.open('logoo.png')
+            
+            # use a fixed smaller size for the top menu (e.g., 60px height)
+            target_height = 60
+            aspect_ratio = original_image.width / original_image.height
+            target_width = int(target_height * aspect_ratio)
+
+            # use Image.LANCZOS (high quality resampling)
+            resized_image = original_image.resize((target_width, target_height), Image.LANCZOS)
+            
+            # keep a reference to prevent garbage collection
+            self.top_logo_image = ImageTk.PhotoImage(resized_image)
+
+            # create a Label to display the image
+            title_label = tk.Label(top_frame, image=self.top_logo_image, bg="#354f52")
+            title_label.grid(row=0, column=1, sticky='')
+
+        except Exception as e:
+            # fallback in case the image is not found or PIL fails
+            title_label = tk.Label(top_frame, text="EDM Bank", font=('Arial', 30, 'bold'),
+                                 bg='#354f52', fg="#FFFFFF")
+            title_label.grid(row=0, column=1, sticky='ew')
 
         # login button
-        # Changed text to LOGOUT and command to the new logout method
+        # changed text to LOGOUT and command to the new logout method
         login_btn = tk.Button(top_frame, text="LOGOUT", font=('Arial', 12, 'bold'), 
                              bg="#354f52", fg='white', relief='flat', padx=25,
                              height=2, command=self.logout_and_relaunch_login)
@@ -299,24 +327,44 @@ class EDMBankApp:
         nav_frame.grid(row=2, column=0, sticky='ew', padx=0, pady=0)
         nav_frame.grid_propagate(False)
         
-        
-        # TODO: replace with image later
-        nav_buttons = [
-            ("⌂", "HOME", self.go_home),
-            ("🖨", "CARDS", self.show_cards),
-            ("🈷", "STATISTICS", self.show_stats),
-            ("˙ᵕ˙", "PROFILE", self.show_profile),
-            ("🗣", "CHAT", self.open_chat)
+        # data structure for the navigation bar
+        nav_buttons_data = [
+            ("HOME", "icon_home.png", self.go_home),
+            ("CARDS", "icon_cards.png", self.show_cards),
+            ("STATISTICS", "icon_stats.png", self.show_stats),
+            ("PROFILE", "icon_profile.png", self.show_profile),
+            ("CHAT", "icon_contact.png", self.open_chat)
         ]
         
-        #  bottom header
-        for i, (icon, text, command) in enumerate(nav_buttons):
+        self.nav_images = []
+        
+        # create and place buttons
+        for text, icon_filename, command in nav_buttons_data:
             btn_frame = tk.Frame(nav_frame, bg="#354f52")
             btn_frame.pack(side='left', expand=True, fill='both')
             
-            # icon and text labels down
-            icon_label = tk.Label(btn_frame, text=icon, font=('FreeMono', 25, 'bold'), 
-                                 bg="#84a98c", fg="#323A87", cursor='hand2')
+            # icon loading logic
+            try:
+                # load the image
+                original_image = Image.open(icon_filename)
+                
+                # resize it (e.g., to 32x32)
+                target_size = (32, 32)
+                # use Image.LANCZOS for high quality resizing
+                resized_image = original_image.resize(target_size, Image.LANCZOS) 
+                
+                # create PhotoImage and store the reference
+                photo_image = ImageTk.PhotoImage(resized_image)
+                # store reference to prevent garbage collection
+                self.nav_images.append(photo_image) 
+                
+                # create Label with image
+                icon_label = tk.Label(btn_frame, image=photo_image, bg="#354f52", cursor='hand2')
+                
+            except FileNotFoundError:
+                # fallback to text if the image file is not found
+                icon_label = tk.Label(btn_frame, text=text[0], font=('FreeMono', 25, 'bold'), 
+                                     bg="#84a98c", fg="#323A87", cursor='hand2')
             icon_label.pack(pady=(10, 2))
 
             # the text near icons down
@@ -324,7 +372,6 @@ class EDMBankApp:
                                  bg="#354f52", fg='#ffffff', cursor='hand2')
             text_label.pack(pady=(0, 10))
             
-            # bind click events
             for widget in [btn_frame, icon_label, text_label]:
                 widget.bind("<Button-1>", lambda e, cmd=command: cmd())
     
@@ -442,7 +489,7 @@ class EDMBankApp:
         self.show_message("Settings", "Application settings", "info")
 
     def go_home(self):
-        self.show_message("Home", "Main page", "info")
+        self.show_message("Home", "You are currently on main page", "info")
     
     def show_cards(self):
         self.show_message("Cards", "Manage your cards", "info")

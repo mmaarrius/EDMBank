@@ -1,6 +1,8 @@
 import tkinter as tk
 from tkinter import messagebox
-from EDMBank_register import EDMBankRegister # Import the register class
+from EDMBank_register import EDMBankRegister
+from EDMBank_keyboard import AlphaNumericKeyboard
+from PIL import Image, ImageTk
 
 class EDMBankLogin:
     def __init__(self, main, on_success_callback):
@@ -31,72 +33,157 @@ class EDMBankLogin:
         self.main.minsize(300, 500)
         self.main.configure(bg="#354f52")
 
-        # password
+        # password and field state
         self.correct_password = "000000"
         self.entered_password = ""
+        self.active_field = 'username'
+        
+        # Store a reference to the image to prevent it from being garbage collected
+        self.logo_image = None 
 
         # main container
         self.main_container = tk.Frame(self.main, bg="#354f52")
         self.main_container.pack(fill='both', expand=True, padx=20, pady=20)
+        
+        # ADDED: Keypad container (will hold either numeric or alphanumeric keyboard)
+        self.keyboard_container = tk.Frame(self.main_container, bg="#354f52")
+        
+        # ADDED: Separate frames for each keyboard type
+        self.numeric_frame = tk.Frame(self.keyboard_container, bg="#354f52")
+        self.alphanum_frame = tk.Frame(self.keyboard_container, bg="#354f52")
+        
+        self.create_numeric_keypad(self.numeric_frame)
+        
         # create login interface
         self.create_login_interface()
+        
+        # Pack the main keyboard container at the bottom
+        self.keyboard_container.pack(fill='both', expand=True, padx=50)
+        
+        # Set initial focus and show the corresponding keyboard
+        self.username_entry.focus_set()
+        self.set_active_field('username')
     
     # --------------------------------------------------------------------------
     
     def create_login_interface(self):
-        # EDM Bank title
-        title_label = tk.Label(self.main_container, text="EDM Bank", 
-                              font=('Arial', 40, 'bold'), bg="#354f52", fg="white")
-        title_label.pack(pady=(50, 30))
+        # EDM Bank title (REPLACED WITH IMAGE LOGO)
+        try:
+            # load and resize the image
+            original_image = Image.open('logoo.png')
+            
+            # using a fixed width of 400px for the logo
+            target_width = 300 
+            aspect_ratio = original_image.height / original_image.width
+            target_height = int(target_width * aspect_ratio)
 
-        # Secure Banking subtitle
-        subtitle_label = tk.Label(self.main_container, text="Secure Banking",
-                                 font=('Arial', 20), bg="#354f52", fg="#cad2c5")
-        subtitle_label.pack(pady=(0, 50))
+            # use Image.LANCZOS (high quality resampling)
+            resized_image = original_image.resize((target_width, target_height), Image.LANCZOS)
+            
+            # keep a reference to prevent garbage collection
+            self.logo_image = ImageTk.PhotoImage(resized_image)
+
+            # create a Label to display the image
+            logo_label = tk.Label(self.main_container, image=self.logo_image, bg="#354f52")
+            logo_label.pack(pady=(50, 30))
+
+        except FileNotFoundError:
+            # fallback in case the image is not found
+            logo_label = tk.Label(self.main_container, text="EDM Bank", 
+                                 font=('Arial', 40, 'bold'), bg="#354f52", fg="white")
+            logo_label.pack(pady=(50, 30))
+            messagebox.showwarning("Warning", "Logo image 'edm_bank_logo.gif' not found. Using text fallback.", parent=self.main)
+        except Exception as e:
+            # fallback for other errors (e.g., PIL not installed)
+            logo_label = tk.Label(self.main_container, text="EDM Bank", 
+                                 font=('Arial', 40, 'bold'), bg="#354f52", fg="white")
+            logo_label.pack(pady=(50, 30))
+            messagebox.showwarning("Warning", f"Could not load logo: {e}. Using text fallback.", parent=self.main)
 
         # username frame
         username_frame = tk.Frame(self.main_container, bg="#354f52")
         username_frame.pack(pady=20, fill='x', padx=50)
         tk.Label(username_frame, text="Username:", font=('Arial', 16), 
-                bg="#354f52", fg="white").pack(anchor='w')
+                 bg="#354f52", fg="white").pack(anchor='w')
         
         # type username box
         self.username_entry = tk.Entry(username_frame, font=('Arial', 16), 
-                                      bg='white', fg='#2f3e46', relief='flat')
+                                       bg='white', fg='#2f3e46', relief='flat')
         self.username_entry.pack(fill='x', pady=(10, 0), ipady=8)
         # default username for testing
         self.username_entry.insert(0, "POPESCU IRIS-MARIA")
-        self.username_entry.focus_set()
+        
+        # bind FocusIn to show alphanumeric keyboard
+        self.username_entry.bind("<FocusIn>", lambda e: self.set_active_field('username'))
         
         # Enter Password for the box
         password_display_frame = tk.Frame(self.main_container, bg="#354f52")
         password_display_frame.pack(pady=30, fill='x', padx=50)
         tk.Label(password_display_frame, text="Enter Password:", font=('Arial', 16), 
-                bg="#354f52", fg="white").pack(anchor='w')
+                 bg="#354f52", fg="white").pack(anchor='w')
         # password display (shows • for each entered digit)
         self.password_display = tk.Label(password_display_frame, text="", 
-                                        font=('Arial', 24, 'bold'), bg="#2f3e46", 
-                                        fg="white", width=15, height=2)
+                                         font=('Arial', 24, 'bold'), bg="#2f3e46", 
+                                         fg="#cad2c5", width=15, height=2)
         self.password_display.pack(fill='x', pady=(10, 0))
+        
+        # bind click to show numeric keypad
+        self.password_display.bind("<Button-1>", lambda e: self.set_active_field('password'))
+        
+        # initialize alphanumeric keyboard (must be done after username_entry is created)
+        self.alphanum_keyboard = AlphaNumericKeyboard(self.alphanum_frame, self.username_entry)
         
         # register button added BEFORE the keypad frame
         register_btn = tk.Button(self.main_container, text="Don't have an account? Register here", 
-                                font=('Arial', 12), bg="#354f52", fg="white", 
-                                relief='flat', command=self.open_register_window)
+                                 font=('Arial', 12), bg="#354f52", fg="white", 
+                                 relief='flat', command=self.open_register_window)
         register_btn.pack(pady=(0, 20))
 
-        # numeric keypad frame
-        keypad_frame = tk.Frame(self.main_container, bg="#354f52")
-        keypad_frame.pack(pady=30, fill='both', expand=True)
-
+    # --------------------------------------------------------------------------
+ 
+    # manage keyboard visibility
+    def set_active_field(self, field_name):
+        self.active_field = field_name
+        
+        # hide both frames first
+        self.numeric_frame.pack_forget()
+        self.alphanum_frame.pack_forget()
+        
+        # reset visual state
+        self.password_display.config(relief='flat', bg='#2f3e46')
+        self.username_entry.config(relief='flat') 
+        
+        if field_name == 'password':
+            # highlight active field and show numeric keypad
+            self.password_display.config(relief='sunken', bg='#2f3e46')
+            self.numeric_frame.pack(fill='both', expand=True)
+            self.main_container.focus_set() # Remove focus from entry widget
+            
+        elif field_name == 'username':
+            # set target entry for alphanumeric keyboard and show it
+            self.alphanum_keyboard.target_entry = self.username_entry
+            self.alphanum_frame.pack(fill='both', expand=True)
+            self.username_entry.focus_set() # Keep focus on entry widget
+            self.username_entry.config(relief='sunken')
+            
+    # hides all keyboards
+    def hide_keyboards(self):
+        self.numeric_frame.pack_forget()
+        self.alphanum_frame.pack_forget()
+        self.password_display.config(relief='flat')
+        self.username_entry.config(relief='flat')
+        self.active_field = None # no field is active
+    
+    # numeric keypad creation moved to a method
+    def create_numeric_keypad(self, parent):
         # create 4x3 grid for keypad
-        keypad_frame.grid_columnconfigure(0, weight=1)
-        keypad_frame.grid_columnconfigure(1, weight=1)
-        keypad_frame.grid_columnconfigure(2, weight=1)
-        keypad_frame.grid_rowconfigure(0, weight=1)
-        keypad_frame.grid_rowconfigure(1, weight=1)
-        keypad_frame.grid_rowconfigure(2, weight=1)
-        keypad_frame.grid_rowconfigure(3, weight=1)
+        parent.grid_columnconfigure(0, weight=1)
+        parent.grid_columnconfigure(1, weight=1)
+        parent.grid_columnconfigure(2, weight=1)
+        parent.grid_rowconfigure(0, weight=1)
+        parent.grid_rowconfigure(1, weight=1)
+        parent.grid_rowconfigure(2, weight=1)
+        parent.grid_rowconfigure(3, weight=1)
         
         # keypad buttons (0-9, Clear, Enter)
         buttons = [
@@ -111,6 +198,7 @@ class EDMBankLogin:
                 bg_color = '#588157'
                 fg_color = '#cad2c5'
                 command = self.check_password
+                font_style = ('Arial', 27, 'bold')
             elif text == '⌫':
                 bg_color = '#6f1d1b'
                 fg_color = '#cad2c5'
@@ -119,19 +207,32 @@ class EDMBankLogin:
                 bg_color = '#84a98c'
                 fg_color = '#2f3e46'
                 command = lambda x=text: self.add_digit(x)
+                font_style = ('Arial', 27, 'bold')
             
-            btn = tk.Button(keypad_frame, text=text, font=('Arial', 27, 'bold'),
-                           bg=bg_color, fg=fg_color, relief='flat',
-                           command=command)
+            btn = tk.Button(parent, text=text, font=font_style,
+                            bg=bg_color, fg=fg_color, relief='flat',
+                            command=command)
             btn.grid(row=row, column=col, padx=5, pady=5, sticky='nsew')
     
+    # --------------------------------------------------------------------------
+
     # add digit to entered password (max 6 digits)
     def add_digit(self, digit):
-        if len(self.entered_password) < 6:
-            self.entered_password = self.entered_password + digit
-            self.update_password_display()
+        # only allow digit entry if password field is active
+        if self.active_field == 'password':
+            if len(self.entered_password) < 6:
+                self.entered_password = self.entered_password + digit
+                self.update_password_display()
+        else:
+            messagebox.showwarning("Input Error", "Please click the Password field to enter your PIN.", parent=self.main)
 
-    # clear the entered password
+    # backspace functionality
+    def backspace_password(self):
+        if self.active_field == 'password':
+            self.entered_password = self.entered_password[:-1]
+            self.update_password_display()
+        
+    # clear the entered password (used for total clear, renamed for clarity)
     def clear_password(self):
         self.entered_password = ""
         self.update_password_display()
@@ -145,6 +246,7 @@ class EDMBankLogin:
     # --------------------------------------------------------------------------
 
     def check_password(self):
+        self.hide_keyboards() # hide keyboards on login attempt
         # if password is correct call the success callback
         if self.entered_password == self.correct_password:
             # get username in uppercase without leading/trailing spaces
@@ -155,13 +257,18 @@ class EDMBankLogin:
                 self.on_success_callback(username, self.main)
             else:
                 messagebox.showerror("Error", "Please enter a username!", parent=self.main)
+                # If error, re-show username keyboard
+                self.set_active_field('username')
         else:
             messagebox.showerror("Login Failed", "Incorrect password or username! Please try again.", parent=self.main)
             self.clear_password()
-  
+            # If error, re-show password keyboard
+            self.set_active_field('password')
+ 
     # --------------------------------------------------------------------------
 
     def open_register_window(self):
+        self.hide_keyboards() # hide keyboards before switching window
         # hide the login window
         self.main.withdraw() 
         
