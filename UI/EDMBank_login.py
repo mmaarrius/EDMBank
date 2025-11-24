@@ -45,10 +45,10 @@ class EDMBankLogin:
         self.main_container = tk.Frame(self.main, bg="#354f52")
         self.main_container.pack(fill='both', expand=True, padx=20, pady=20)
         
-        # ADDED: Keypad container (will hold either numeric or alphanumeric keyboard)
+        # Keypad container (will hold either numeric or alphanumeric keyboard)
         self.keyboard_container = tk.Frame(self.main_container, bg="#354f52")
         
-        # ADDED: Separate frames for each keyboard type
+        # Separate frames for each keyboard type
         self.numeric_frame = tk.Frame(self.keyboard_container, bg="#354f52")
         self.alphanum_frame = tk.Frame(self.keyboard_container, bg="#354f52")
         
@@ -57,10 +57,10 @@ class EDMBankLogin:
         # create login interface
         self.create_login_interface()
         
-        # Pack the main keyboard container at the bottom
+        # pack the main keyboard container at the bottom
         self.keyboard_container.pack(fill='both', expand=True, padx=50)
         
-        # Set initial focus and show the corresponding keyboard
+        # set initial focus and show the corresponding keyboard
         self.username_entry.focus_set()
         self.set_active_field('username')
     
@@ -73,7 +73,7 @@ class EDMBankLogin:
             original_image = Image.open('logoo.png')
             
             # using a fixed width of 400px for the logo
-            target_width = 300 
+            target_width = 400 
             aspect_ratio = original_image.height / original_image.width
             target_height = int(target_width * aspect_ratio)
 
@@ -102,13 +102,13 @@ class EDMBankLogin:
 
         # username frame
         username_frame = tk.Frame(self.main_container, bg="#354f52")
-        username_frame.pack(pady=20, fill='x', padx=50)
-        tk.Label(username_frame, text="Username:", font=('Arial', 16), 
+        username_frame.pack(pady=40, fill='x', padx=50)
+        tk.Label(username_frame, text="Username:", font=('Tex Gyre Chorus', 40), 
                  bg="#354f52", fg="white").pack(anchor='w')
         
         # type username box
-        self.username_entry = tk.Entry(username_frame, font=('Arial', 16), 
-                                       bg='white', fg='#2f3e46', relief='flat')
+        self.username_entry = tk.Entry(username_frame, font=('Courier', 25), 
+                                       bg='#2f3e46', fg='white', relief='flat')
         self.username_entry.pack(fill='x', pady=(10, 0), ipady=8)
         # default username for testing
         self.username_entry.insert(0, "POPESCU IRIS-MARIA")
@@ -119,7 +119,7 @@ class EDMBankLogin:
         # Enter Password for the box
         password_display_frame = tk.Frame(self.main_container, bg="#354f52")
         password_display_frame.pack(pady=30, fill='x', padx=50)
-        tk.Label(password_display_frame, text="Enter Password:", font=('Arial', 16), 
+        tk.Label(password_display_frame, text="Enter Password:", font=('Tex Gyre Chorus', 40), 
                  bg="#354f52", fg="white").pack(anchor='w')
         # password display (shows • for each entered digit)
         self.password_display = tk.Label(password_display_frame, text="", 
@@ -135,9 +135,9 @@ class EDMBankLogin:
         
         # register button added BEFORE the keypad frame
         register_btn = tk.Button(self.main_container, text="Don't have an account? Register here", 
-                                 font=('Arial', 12), bg="#354f52", fg="white", 
+                                 font=('Courier', 20, 'bold'), bg="#354f52", fg="white", 
                                  relief='flat', command=self.open_register_window)
-        register_btn.pack(pady=(0, 20))
+        register_btn.pack(pady=(20,200))
 
     # --------------------------------------------------------------------------
  
@@ -198,16 +198,17 @@ class EDMBankLogin:
                 bg_color = '#588157'
                 fg_color = '#cad2c5'
                 command = self.check_password
-                font_style = ('Arial', 27, 'bold')
+                font_style = ('Courier', 27, 'bold')
             elif text == '⌫':
                 bg_color = '#6f1d1b'
                 fg_color = '#cad2c5'
                 command = self.clear_password
+                font_style = ('Courier', 27, 'bold')
             else:
                 bg_color = '#84a98c'
                 fg_color = '#2f3e46'
                 command = lambda x=text: self.add_digit(x)
-                font_style = ('Arial', 27, 'bold')
+                font_style = ('Courier', 27, 'bold')
             
             btn = tk.Button(parent, text=text, font=font_style,
                             bg=bg_color, fg=fg_color, relief='flat',

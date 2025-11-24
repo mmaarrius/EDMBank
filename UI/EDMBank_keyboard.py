@@ -1,10 +1,12 @@
 import tkinter as tk
+from tkinter import ttk
 
 class AlphaNumericKeyboard:
     def __init__(self, parent_frame, target_entry):
         self.parent_frame = parent_frame
         self.target_entry = target_entry
         self.is_shift_active = False
+        self.letter_buttons = {}
         
         # configure grid for the keyboard rows (10 columns)
         for i in range(10):
@@ -28,11 +30,15 @@ class AlphaNumericKeyboard:
             ('⌫', 3, 9, 1), # Backspace takes 1 column (M is at 3,8, so 3,9 is last key)
             # row 5 (Space and Enter)
             ('@', 4, 0), ('.', 4, 1), 
-            (' ', 4, 2, 6),  # Space takes 6 columns
-            ('Enter', 4, 8, 2) # Enter takes 2 columns
+            (' ', 4, 2, 6), # Space takes 6 columns
+            ('ENTER', 4, 8, 2) # Enter takes 2 columns
         ]
         
         self.create_buttons()
+
+    # --------------------------------------------------------------------------
+    def _is_text_widget(self):
+        return self.target_entry and self.target_entry.__class__.__name__ == 'Text'
     
     # --------------------------------------------------------------------------
     # create buttons based on the self.buttons data
@@ -48,22 +54,26 @@ class AlphaNumericKeyboard:
                 bg_color = '#64748b'
                 fg_color = 'white'
                 command = self.toggle_shift if text == '⬆' else self.backspace
+                font_style = ('Courier', 27, 'bold')
             elif text in (' ', '@', '.', '_'):
                 bg_color = '#475569'
                 fg_color = 'white'
                 command = lambda t=text: self.type_character(t)
-            elif text == 'Enter':
+                font_style = ('Courier', 27, 'bold')
+            elif text == 'ENTER':
                 bg_color = '#588157'
                 fg_color = 'white'
                 command = self.submit 
+                font_style = ('Courier', 27, 'bold')
             else:
                 # standard alphanumeric keys and numbers
                 bg_color = '#84a98c'
                 fg_color = '#2f3e46'
                 command = lambda t=text: self.type_character(t)
+                font_style = ('Courier', 27, 'bold')
             
             # key change: smaller font (10) and no explicit height
-            btn = tk.Button(self.parent_frame, text=text, font=('Arial', 10, 'bold'),
+            btn = tk.Button(self.parent_frame, text=text, font=font_style,
                            bg=bg_color, fg=fg_color, relief='flat',
                            command=command)
             btn.grid(row=row, column=col, columnspan=col_span, padx=1, pady=1, sticky='nsew')
@@ -81,9 +91,6 @@ class AlphaNumericKeyboard:
     # --------------------------------------------------------------------------
     # handle typing a character into the target entry
     def type_character(self, char):
-        current_text = self.target_entry.get()
-        cursor_pos = self.target_entry.index(tk.INSERT)
-        
         char_to_insert = char
         
         # handle case sensitivity for letters
@@ -92,20 +99,38 @@ class AlphaNumericKeyboard:
                 char_to_insert = char.upper()
             else:
                 char_to_insert = char.lower()
-        
-        self.target_entry.insert(cursor_pos, char_to_insert)
+
+        if self._is_text_widget():
+            # for tk.Text widget
+            self.target_entry.insert(tk.INSERT, char_to_insert)
+            self.target_entry.focus_set() # Keep focus on the Text widget
+        else:
+            # for tk.Entry/ttk.Entry widget
+            cursor_pos = self.target_entry.index(tk.INSERT)
+            self.target_entry.insert(cursor_pos, char_to_insert)
+            self.target_entry.icursor(cursor_pos + len(char_to_insert))
 
     # --------------------------------------------------------------------------
     # handle backspace functionality
     def backspace(self):
-        current_text = self.target_entry.get()
-        cursor_pos = self.target_entry.index(tk.INSERT)
-        
-        if cursor_pos > 0:
-            new_text = current_text[:cursor_pos-1] + current_text[cursor_pos:]
-            self.target_entry.delete(0, tk.END)
-            self.target_entry.insert(0, new_text)
-            self.target_entry.icursor(cursor_pos - 1)
+        if self._is_text_widget():
+            # for tk.Text widget
+            try:
+                # delete the character before the cursor
+                self.target_entry.delete('insert - 1 char', tk.INSERT)
+            except tk.TclError:
+                pass # cursor at the beginning
+            self.target_entry.focus_set() # Keep focus on the Text widget
+        else:
+            # for tk.Entry/ttk.Entry widget
+            current_text = self.target_entry.get()
+            cursor_pos = self.target_entry.index(tk.INSERT)
+            
+            if cursor_pos > 0:
+                new_text = current_text[:cursor_pos-1] + current_text[cursor_pos:]
+                self.target_entry.delete(0, tk.END)
+                self.target_entry.insert(0, new_text)
+                self.target_entry.icursor(cursor_pos - 1)
 
     # --------------------------------------------------------------------------
     # handle shift toggle
@@ -123,7 +148,4 @@ class AlphaNumericKeyboard:
     # --------------------------------------------------------------------------
     # handle submit (Enter key)
     def submit(self):
-        # hides the keyboard when "Enter" is pressed
-        self.target_entry.icursor(tk.END)
-        self.target_entry.focus_force() 
-        self.parent_frame.pack_forget()
+        self.parent_frame.grid_remove()
