@@ -32,24 +32,25 @@ class Database:
         CVV = user.card.cvv
         email = user.credentials.email
         history = user.payment_history
+        sum = user.balance
     
-        Password_bytes = str(Password).encode()
+        Password_bytes = str(password).encode()
         salt = bcrypt.gensalt()
         Password = bcrypt.hashpw(Password_bytes, salt)
         Password = Password.decode()
+        expiry_date = user.card.expiry_date
 
-        # TODO : all the necessary data is found in the User object (card, history, etc..).
-        # Database should memorise all the fields
-        # user_data = {
-        #     "Name" : username,
-        #     "Password_hash" : Password,
-        #     "Card_Number" : CardDigit,
-        #     "CVV" : CVV,
-        #     "Expiry_date" : expiry_date,
-        #     "Sold" : sum,
-        #     "Email" : email,
-        #     "Istoric" : []
-        # }
+
+        user_data = {
+             "Name" : username,
+             "Password_hash" : Password,
+             "Card_Number" : CardDigit,
+             "CVV" : CVV,
+             "Expiry_date" : expiry_date,
+             "Sold" : sum,
+             "Email" : email,
+             "Istoric" : history
+         }
         self.db.collection("Users").document(username).set(user_data)
 
     def checkUserLogin(self, username, Password):
@@ -92,8 +93,40 @@ class Database:
 
     def modify_user(self, user: User):
         """A simple first-step method to modify any user field in the database."""
-        self.deleteUser(user.username)
-        self.addUser(user)
+        self.delete_user(user.credentials.username)
+        self.add_user(user)
 
-    # TODO : should return an User object
-    # def getUser(self, username): 
+    def get_user(self, username):
+        doc_ref = self.db.collection("Users").document(username)
+        doc = doc_ref.get()
+        data = doc.to_dict
+
+        email = data.get("Email")
+        balance = data.get("Sold")
+        hashed_pass = data.get("Password_hash")
+        cardNr = data.get("Card_Number")
+        cvv = data.get("CVV")
+        exp_date = data.get("Expiry_date")
+        history = data.get("Istoric")
+
+        credentials = UserCredentials(
+            username = username,
+            password = hashed_pass,
+            email = email
+        )
+
+        card = Card(
+            number = cardNr,
+            cvv = cvv,
+            expiry_date = exp_date
+        )
+        history_formated = PaymentsHistory()
+
+        User(
+            credentials=credentials,
+            balance=balance,
+            payment_history=history_formated,
+            card=card
+        )
+
+        return User
