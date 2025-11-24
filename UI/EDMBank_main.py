@@ -2,7 +2,8 @@ import tkinter as tk
 from tkinter import ttk, messagebox
 import os
 import random
-from PIL import Image, ImageTk 
+from PIL import Image, ImageTk
+from EDMBank_contact import EDMBankContact
 
 class EDMBankApp:
     def __init__(self, main, relauch_login_callback=None): 
@@ -258,6 +259,8 @@ class EDMBankApp:
                                  style="Green.TCombobox") # Apply the new style
 
         dropdown.grid(row=0, column=0, sticky='w', padx=(0, 10))
+        dropdown.bind("<<ComboboxSelected>>", self.handle_dropdown_selection) 
+    # -----------------------------------------------------------
         # -----------------------------------------------------------
 
         try:
@@ -278,6 +281,27 @@ class EDMBankApp:
                               bg="#354f52", fg='white', relief='flat', padx=25,
                               height=2, command=self.logout_and_relaunch_login)
         login_btn.grid(row=0, column=2, sticky='e', padx=(10, 0))
+
+    # --------------------------------------------------------------------------
+    def handle_dropdown_selection(self, event):
+        # This function handles the selection from the main top-left dropdown menu.
+        selected = self.dropdown_var.get()
+
+        # User requested 'Accounts' to lead to EDMBank_login.py, 
+        # which is implemented here by calling the logout/relaunch function.
+        if selected == "Accounts":
+            self.logout_and_relaunch_login()
+        elif selected == "Savings":
+            self.show_message("Savings", "Manage your savings accounts", "info")
+        elif selected == "Settings":
+            self.settings()
+        elif selected == "Cards":
+            self.show_cards()
+        elif selected == "Payments":
+            self.make_payment()
+
+        # Reset the dropdown display text to 'Menu' after selection
+        self.dropdown_var.set("Menu")
 
     # --------------------------------------------------------------------------
 
@@ -312,7 +336,13 @@ class EDMBankApp:
         self.buttons_frame = tk.Frame(self.content_frame, bg='#cad2c5')
         self.buttons_frame.grid(row=3, column=0, sticky='nsew', pady=20)
         
-        self.switch_to_mobile_layout()
+        current_width = self.main.winfo_width()
+        if current_width > 600:
+            self.switch_to_desktop_layout()
+            self.is_large_screen = True
+        else:
+            self.switch_to_mobile_layout()
+            self.is_large_screen = False
     
     # --------------------------------------------------------------------------
 
@@ -348,18 +378,21 @@ class EDMBankApp:
         if view_name == "home":
             self.show_home_view()
         elif view_name == "contact":
-            self.content_frame.grid_rowconfigure(0, weight=0)
-            self.content_frame.grid_rowconfigure(1, weight=1)  
+            self.content_frame.grid_rowconfigure(0, weight=1) # Make the single row expand
             self.content_frame.grid_columnconfigure(0, weight=1)
             try:
-                # from EDMBank_contact import EDMBankContact 
-                # EDMBankContact(self.content_frame, self.logged_in_user, self.logged_in_user_email, self.switch_view)
-                lbl = tk.Label(self.content_frame, text="Chat/Contact View Placeholder", bg="#cad2c5")
-                lbl.grid(row=0, column=0, pady=50)
-            except ImportError as e:
-                self.show_message("Error", f"EDMBank_contact.py error: {e}", "error")
+                EDMBankContact(self.content_frame, 
+                               self.logged_in_user, 
+                               self.logged_in_user_email, 
+                               self.switch_view)
+            except Exception as e:
+                self.show_message("Error", f"Could not load contact view: {e}", "error")
+                lbl = tk.Label(self.content_frame, text=f"Error Loading Contact View: {e}", bg="#cad2c5", fg="red")
+                lbl.pack(fill='both', expand=True)
         else:
             self.show_message("Navigation Error", f"View '{view_name}' is not yet implemented.", "warning")
+
+    # --------------------------------------------------------------------------
 
     def create_bottom_menu(self):
         nav_frame = tk.Frame(self.main_container, bg="#7ecd9d", height=80)
@@ -371,7 +404,7 @@ class EDMBankApp:
             ("CARD", "./icons/icon_card.png", self.show_cards),
             ("STATISTICS", "./icons/icon_stats.png", self.show_stats),
             ("PROFILE", "./icons/icon_profile.png", self.show_profile),
-            ("CHAT", "./icons/icon_contact.png", self.open_chat)
+            ("CONTACT", "./icons/icon_contact.png", self.open_chat)
         ]
         
         self.nav_images = []
