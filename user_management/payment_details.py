@@ -8,7 +8,7 @@ class Payment:
         self.amount = amount
         self.sender = sender
         self.receiver = receiver
-        self.date = datetime.now()
+        #self.date = datetime.now()
 
 class PaymentsHistory:
     """

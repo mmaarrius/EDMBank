@@ -1,6 +1,7 @@
 from DataBase.DataBase import Database
 from user_management.user import User
 from exceptions import *
+import bcrypt
 
 class BankService:
     def __init__(self, db: Database):
@@ -25,6 +26,16 @@ class BankService:
     def add_money(self, user: User, amount: float):
         user.balance += amount
         self.db.modify_user(user)
-        
+    
+    def checkUserLogin(self, username, Password):
+        doc_ref = self.db.collection("Users").document(username)
+        doc = doc_ref.get()
 
+        if not doc.exists:
+            return False
+        stored_hash = doc.to_dict().get("Password_hash")
+        if bcrypt.checkpw(Password.encode(), stored_hash.encode()):
+            return True
+        else:
+            return False  
     
