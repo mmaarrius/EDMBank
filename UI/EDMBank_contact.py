@@ -11,108 +11,167 @@ class EDMBankContact:
         self.logged_in_email = logged_in_email 
         self.switch_view_callback = switch_view_callback
         
+        # Initial data preparation
+        self.last_name, self.first_name = self._split_name(self.logged_in_user)
+        
+        # Tkinter variables for user info (Read-only on this screen)
+        self.first_name_var = tk.StringVar(value=self.first_name)
+        self.last_name_var = tk.StringVar(value=self.last_name)
+        self.email_var = tk.StringVar(value=self.logged_in_email)
+        
+        # Define the light background color consistent with the Profile view
+        DARK_TEXT = '#2f3e46' 
+        
         self.style = ttk.Style()
+        
+        # Contact.TButton: Button style
         self.style.configure('Contact.TButton', 
-                             foreground='#2f3e46',
+                             foreground=DARK_TEXT,
                              font=('Helvetica', 26, 'bold'), 
                              padding=10)
+        
+        # Contact.TLabel: Label style 
         self.style.configure('Contact.TLabel', 
-                             background='#354f52',
-                             foreground='#cad2c5',
+                             background='#cad2c5', 
+                             foreground=DARK_TEXT,
                              font=('Helvetica', 12))
+        
+        # Active state for buttons (e.g., hover)
         self.style.map('Contact.TButton',
                        background=[('active', '#84a98c')])
         
-        self.style.configure('Dark.TEntry',
-                             fieldbackground='#354f52',
-                             foreground='#cad2c5',
-                             insertcolor='#cad2c5',
-                             borderwidth=0,
-                             relief='flat')
-        self.style.map('Dark.TEntry',
-                       fieldbackground=[('focus', '#354f52')])
-
         self.keyboard_container = None
         self.keyboard_instance = None
         self.keyboard_visible = False
         
         self.create_interface()
 
+    def _split_name(self, full_name):
+        """Splits the full name into Last Name and First Name (assuming Last Name is first word)."""
+        parts = full_name.split()
+        if len(parts) >= 2:
+            last_name = parts[0]
+            first_name = " ".join(parts[1:])
+            return last_name, first_name
+        return full_name, "" 
+
+    def _create_read_only_field(self, parent, label_text, textvariable, row):
+        """Helper to create a label and a read-only Entry field in the new style."""
+        LIGHT_BG = '#cad2c5'
+        DARK_TEXT = '#2f3e46'
+        ACCENT_COLOR = '#84a98c'
+        
+        # Label (Left Column)
+        ttk.Label(parent, 
+                  text=label_text, 
+                  style='Contact.TLabel',
+                  background=LIGHT_BG,
+                  foreground=DARK_TEXT,
+                  font=('Courier', 20, 'bold')
+                  ).grid(row=row, column=0, padx=10, pady=5, sticky='w')
+        
+        # Entry (Right Column - Read Only)
+        entry = tk.Entry(parent, 
+                         textvariable=textvariable, 
+                         font=('Courier', 20),
+                         bg=ACCENT_COLOR,
+                         fg=DARK_TEXT,
+                         relief=tk.FLAT, 
+                         bd=0,                   
+                         insertbackground=DARK_TEXT) 
+        
+        entry.config(state='readonly')
+        entry.grid(row=row, column=1, padx=10, pady=5, sticky='ew')
+        return entry
+    
     # --------------------------------------------------------------------------
     
     def create_interface(self):
+        # Define colors locally
+        LIGHT_BG = '#cad2c5' 
+        DARK_TEXT = '#2f3e46'
+        ACCENT_COLOR = '#84a98c'
+        
         # clear any previous widgets in the parent frame
         for widget in self.parent_frame.winfo_children():
             widget.destroy()
 
-        self.content_frame = tk.Frame(self.parent_frame, bg='#354f52')
+        # Main content frame - Background: #cad2c5 (light background)
+        self.content_frame = tk.Frame(self.parent_frame, bg=LIGHT_BG)
         self.content_frame.pack(fill='both', expand=True, padx=0, pady=0)
         
         # configure the grid for the content frame
         self.content_frame.grid_columnconfigure(0, weight=1)
-        self.content_frame.grid_rowconfigure(5, weight=1) # Row for the large Text box
+        self.content_frame.grid_rowconfigure(7, weight=1) # Row for the large Text box
 
+        # Row 0: Title Label
         title_label = tk.Label(self.content_frame, 
-                               text="Contact Support",
+                               text="CONTACT SUPPORT",
                                font=('Arial', 40, 'bold'), 
-                               bg='#354f52', 
-                               fg='#cad2c5')
-        title_label.grid(row=0, column=0, pady=(20, 60), sticky='ew')
+                               bg=LIGHT_BG, 
+                               fg=DARK_TEXT)
+        title_label.grid(row=0, column=0, pady=(20, 30), sticky='ew')
 
-        info_frame = tk.Frame(self.content_frame, bg='#354f52', padx=10, pady=10)
-        info_frame.grid(row=1, column=0, sticky='ew', pady=10)
+        # Row 1: User Details Frame (Contains First Name, Last Name, Email)
+        user_details_frame = tk.Frame(self.content_frame, bg=LIGHT_BG, padx=20, pady=10)
+        user_details_frame.grid(row=1, column=0, sticky='ew')
+        user_details_frame.grid_columnconfigure(1, weight=1) 
+
+        self._create_read_only_field(user_details_frame, "First Name:", self.first_name_var, 0)
+        self._create_read_only_field(user_details_frame, "Last Name:", self.last_name_var, 1)
+        self._create_read_only_field(user_details_frame, "Email:", self.email_var, 2)
+
+
+        # Row 2: Label for Problem Title
+        ttk.Label(self.content_frame, 
+                  text="Problem Title:", 
+                  style='Contact.TLabel',
+                  background=LIGHT_BG,
+                  foreground=DARK_TEXT,
+                  font=('Tex Gyre Chorus', 26, 'bold')).grid(row=2, column=0, sticky='w', padx=20, pady=(10, 0))
         
-        ttk.Label(info_frame, 
-                  text=f"User: {self.logged_in_user.upper()}", 
-                  style='Contact.TLabel', 
-                  background='#354f52',
-                  font=('Courier', 26, 'bold')).pack(anchor='w')
-        
-        ttk.Label(info_frame, 
-                  text=f"Email: {self.logged_in_email}", 
-                  style='Contact.TLabel', 
-                  background='#354f52',
-                  font=('Courier', 26)).pack(anchor='w')
-        
-        # Label for Title
-        ttk.Label(self.content_frame, text="Problem Title:", style='Contact.TLabel',font=('Tex Gyre Chorus', 26, 'bold')).grid(row=2, column=0, sticky='w', pady=(10, 0))
-        
-        # Title Entry
+        # Row 3: Problem Title Entry (Editable)
         self.title_entry = tk.Entry(self.content_frame,
                                     width=10,
                                     font=('Courier', 20),  
-                                    bg="#84a98c",
-                                    fg="#052A30",
-                                    relief=tk.FLAT,         
+                                    bg=ACCENT_COLOR,
+                                    fg=DARK_TEXT,
+                                    relief=tk.FLAT, 
                                     bd=0,                   
-                                    insertbackground='#cad2c5')
-        self.title_entry.grid(row=3, column=0, sticky='ew', pady=(3, 10))
+                                    insertbackground=DARK_TEXT)
+        self.title_entry.grid(row=3, column=0, sticky='ew', padx=20, pady=(3, 10))
         
         # bind focus to title entry to SHOW keyboard
         self.title_entry.bind('<FocusIn>', lambda e: self.toggle_keyboard_visibility(self.title_entry))
         
-        # Label for Concern - Uses Contact.TLabel style (Font 12)
-        ttk.Label(self.content_frame, text="Describe your concern:", style='Contact.TLabel',font=('Tex Gyre Chorus', 26, 'bold')).grid(row=4, column=0, sticky='w', pady=(10, 0))
+        # Row 4: Label for Concern
+        ttk.Label(self.content_frame, 
+                  text="Describe your concern:", 
+                  style='Contact.TLabel',
+                  background=LIGHT_BG,
+                  foreground=DARK_TEXT,
+                  font=('Tex Gyre Chorus', 26, 'bold')).grid(row=4, column=0, sticky='w', padx=20, pady=(10, 0))
         
-        # Concern Text - FONT MĂRIT: 12 -> 14
+        # concern text (editable, takes up remaining vertical space)
         self.concern_text = Text(self.content_frame, 
                                  height=2, 
                                  width=30, 
                                  font=('Courier', 20), 
                                  relief=tk.FLAT, 
                                  bd=0, 
-                                 bg="#84a98c", 
-                                 fg="#052A30",
-                                 insertbackground='#cad2c5',
+                                 bg=ACCENT_COLOR, 
+                                 fg=DARK_TEXT,
+                                 insertbackground=DARK_TEXT,
                                  padx=5, pady=10)
-        # this is the expanding row (weight=1)
-        self.concern_text.grid(row=5, column=0, sticky='nsew', pady=(3, 20)) 
+        self.concern_text.grid(row=5, column=0, sticky='nsew', padx=20, pady=(3, 20), rowspan=3) 
+        self.content_frame.grid_rowconfigure(5, weight=1) # ensure the text area is the one that expands
         
-        # bind focus in on concern text to SHOW keyboard and update target
+        # bind focus in on concern text to show keyboard and update target
         self.concern_text.bind('<FocusIn>', lambda e: self.toggle_keyboard_visibility(self.concern_text)) 
         
-        button_frame = tk.Frame(self.content_frame, bg='#354f52')
-        button_frame.grid(row=6, column=0, sticky='ew', pady=(0, 10))
+        # button Frame
+        button_frame = tk.Frame(self.content_frame, bg=LIGHT_BG)
+        button_frame.grid(row=8, column=0, sticky='ew', pady=(0, 10), padx=20)
         
         # submit button
         submit_btn = ttk.Button(button_frame, 
@@ -128,12 +187,13 @@ class EDMBankContact:
                               style='Contact.TButton')
         back_btn.pack(side='right', expand=True, fill='x', padx=(10, 0))
         
-        self.keyboard_container = tk.Frame(self.content_frame, bg='#354f52')
+        # Row 9: Keyboard Container
+        self.keyboard_container = tk.Frame(self.content_frame, bg=LIGHT_BG)
         
         # initialize the keyboard instance
         self.keyboard_instance = AlphaNumericKeyboard(self.keyboard_container, self.title_entry)
 
-        self.keyboard_container.grid(row=7, column=0, sticky='ew')
+        self.keyboard_container.grid(row=9, column=0, sticky='ew')
         # use grid_remove() to hide the keyboard initially
         self.keyboard_container.grid_remove()
 
@@ -179,8 +239,8 @@ class EDMBankContact:
         # confirmation message
         confirmation_message = (
             f"Your concern has been submitted successfully!\n\n"
-            f"User: {self.logged_in_user.upper()}\n"
-            f"Email: {self.logged_in_email}\n"
+            f"User: {self.last_name_var.get()} {self.first_name_var.get()}\n"
+            f"Email: {self.email_var.get()}\n"
             f"Title: {title}\n"
             f"Message Snippet: {concern[:50]}..."
         )

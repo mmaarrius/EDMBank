@@ -4,6 +4,8 @@ import os
 import random
 from PIL import Image, ImageTk
 from EDMBank_contact import EDMBankContact
+import locale
+from EDMBank_profile import EDMBankProfile 
 
 class EDMBankApp:
     def __init__(self, main, relauch_login_callback=None): 
@@ -146,7 +148,7 @@ class EDMBankApp:
                 self.card_frame.coords(self.text_expiry, card_width - padding, card_height - padding)
                 
              except Exception as e:
-                pass
+                 pass
         
         if rebind:
             self.main.bind('<Configure>', self.on_resize)
@@ -170,9 +172,8 @@ class EDMBankApp:
         ]
         
         for text, command in buttons_data:
-            btn = tk.Button(self.buttons_frame, text=text, font=('Arial', 16, 'bold'), 
-                            bg='#52796f', fg='white', relief='flat', borderwidth=2,
-                            height=3, command=command)
+            # use ttk.Button with the new 'MainAction.TButton' style
+            btn = ttk.Button(self.buttons_frame, text=text, command=command, style='MainAction.TButton')
             btn.pack(fill='x', padx=10, pady=6)
         
         self.card_frame.configure(height=360, width=500)
@@ -202,9 +203,8 @@ class EDMBankApp:
         ]
         
         for text, command, row, col in buttons_data:
-            btn = tk.Button(self.buttons_frame, text=text, font=('Arial', 11), 
-                            bg='#354f52', fg="white", relief='flat',
-                            height=2, command=command)
+            # use ttk.Button with the new 'MainAction.TButton' style
+            btn = ttk.Button(self.buttons_frame, text=text, command=command, style='MainAction.TButton')
             btn.grid(row=row, column=col, padx=6, pady=6, sticky='nsew')
         
         self.card_frame.configure(height=240, width=400)
@@ -233,35 +233,41 @@ class EDMBankApp:
 
         style = ttk.Style()
         
+        # configure style for main action buttons
+        style.configure('MainAction.TButton',
+                            font=('Courier', 20, 'bold'),
+                            foreground='#2f3e46',
+                            background='#52796f',
+                            padding=20)
+        style.map('MainAction.TButton',
+                        background=[('active', '#84a98c')])
+        
         style.theme_use('default') 
         style.configure("Green.TCombobox", 
-                        fieldbackground='#52796f', # Darker green for the input field
-                        background='#84a98c',    # Lighter green for the button/arrow part
-                        foreground='white',
-                        selectbackground='#84a98c',
-                        selectforeground='white',
-                        font=('Courier', 26, 'bold'),
-                        padding=10) # Add some padding
+                              fieldbackground="#ffffff",
+                              background="#051f0b",
+                              foreground='white',
+                              selectbackground='#84a98c',
+                              selectforeground='white',
+                              font=('Courier', 26, 'bold'),
+                              padding=10)
 
         style.map('Green.TCombobox', 
-                  fieldbackground=[('readonly', '#52796f')],
-                  background=[('readonly', '#84a98c')])
+                      fieldbackground=[('readonly', '#52796f')],
+                      background=[('readonly', '#84a98c')])
         
-        # Set the font for the options in the dropdown list (affects the listbox pop-up)
         self.main.option_add('*TCombobox*Listbox.font', ('Courier', 14))
 
         self.dropdown_var = tk.StringVar()
         self.dropdown_var.set("Menu")
         
         dropdown = ttk.Combobox(top_frame, textvariable=self.dropdown_var, 
-                                 values=["Accounts", "Savings", "Settings", "Cards", "Payments"], 
-                                 state="readonly", width=12, background='#52796f', # Adjusted width to look better with larger font
-                                 style="Green.TCombobox") # Apply the new style
+                                     values=["Accounts", "Savings", "Settings", "Cards", "Payments"], 
+                                     state="readonly", width=12, background='#52796f',
+                                     style="Green.TCombobox")
 
         dropdown.grid(row=0, column=0, sticky='w', padx=(0, 10))
         dropdown.bind("<<ComboboxSelected>>", self.handle_dropdown_selection) 
-    # -----------------------------------------------------------
-        # -----------------------------------------------------------
 
         try:
             original_image = Image.open('logoo.png')
@@ -284,11 +290,9 @@ class EDMBankApp:
 
     # --------------------------------------------------------------------------
     def handle_dropdown_selection(self, event):
-        # This function handles the selection from the main top-left dropdown menu.
+        # this function handles the selection from the main top-left dropdown menu.
         selected = self.dropdown_var.get()
 
-        # User requested 'Accounts' to lead to EDMBank_login.py, 
-        # which is implemented here by calling the logout/relaunch function.
         if selected == "Accounts":
             self.logout_and_relaunch_login()
         elif selected == "Savings":
@@ -300,7 +304,7 @@ class EDMBankApp:
         elif selected == "Payments":
             self.make_payment()
 
-        # Reset the dropdown display text to 'Menu' after selection
+        # reset the dropdown display text to 'Menu' after selection
         self.dropdown_var.set("Menu")
 
     # --------------------------------------------------------------------------
@@ -323,7 +327,7 @@ class EDMBankApp:
         
         self.create_card(self.content_frame)
 
-        sold_btn = tk.Button(self.content_frame, text="VIEW BALANCE", font=('Open Sans', 10, 'bold'),
+        sold_btn = tk.Button(self.content_frame, text="VIEW BALANCE", font=('Courier', 20, 'bold'),
                               bg='#52796f', fg='#ffffff', relief='flat',
                               height=3, command=self.toggle_sold)
         sold_btn.grid(row=1, column=0, sticky='ew', pady=15)
@@ -360,13 +364,13 @@ class EDMBankApp:
                                                      font=('Arial', 12), fill='white', anchor='ne')
         
         self.text_number = self.card_frame.create_text(0, 0, text=self.format_card_number(self.card_number), 
-                                                       font=('Arial', 18, 'bold'), fill='white', anchor='center')
+                                                         font=('Arial', 18, 'bold'), fill='white', anchor='center')
         
         self.text_holder = self.card_frame.create_text(0, 0, text="POPESCU IRINA-MARIA", 
-                                                       font=('Arial', 12), fill='white', anchor='sw')
+                                                         font=('Arial', 12), fill='white', anchor='sw')
         
         self.text_expiry = self.card_frame.create_text(0, 0, text=self.card_expiry, 
-                                                       font=('Arial', 12), fill='white', anchor='se')
+                                                         font=('Arial', 12), fill='white', anchor='se')
         self.update_card_background(rebind=False)
         
     # --------------------------------------------------------------------------
@@ -378,7 +382,7 @@ class EDMBankApp:
         if view_name == "home":
             self.show_home_view()
         elif view_name == "contact":
-            self.content_frame.grid_rowconfigure(0, weight=1) # Make the single row expand
+            self.content_frame.grid_rowconfigure(0, weight=1) # make the single row expand
             self.content_frame.grid_columnconfigure(0, weight=1)
             try:
                 EDMBankContact(self.content_frame, 
@@ -389,6 +393,24 @@ class EDMBankApp:
                 self.show_message("Error", f"Could not load contact view: {e}", "error")
                 lbl = tk.Label(self.content_frame, text=f"Error Loading Contact View: {e}", bg="#cad2c5", fg="red")
                 lbl.pack(fill='both', expand=True)
+        elif view_name == "profile": # handle profile view
+            self.content_frame.grid_rowconfigure(0, weight=1) 
+            self.content_frame.grid_columnconfigure(0, weight=1)
+            try:
+                # initialize EDMBankProfile
+                EDMBankProfile(self.content_frame, 
+                               self.logged_in_user, 
+                               self.logged_in_user_email,
+                               self.switch_view) # pass self.switch_view as the callback
+            except Exception as e:
+                self.show_message("Error", f"Could not load profile view: {e}", "error")
+                lbl = tk.Label(self.content_frame, text=f"Error Loading Profile View: {e}", bg="#cad2c5", fg="red")
+                lbl.pack(fill='both', expand=True)
+        # handle special callbacks from EDMBankProfile (and others)
+        elif view_name == "logout_relaunch":
+            self.logout_and_relaunch_login()
+        elif view_name == "get_card_snippet": # helper for EDMBankProfile to get data
+            return self.card_number[-4:] 
         else:
             self.show_message("Navigation Error", f"View '{view_name}' is not yet implemented.", "warning")
 
@@ -459,7 +481,7 @@ class EDMBankApp:
         if self.relauch_login_callback:
             self.relauch_login_callback()
         else:
-              self.show_in_app_login()  
+             self.show_in_app_login() 
             
     def show_in_app_login(self):
         login_window = tk.Toplevel(self.main)
@@ -498,7 +520,7 @@ class EDMBankApp:
 
         def on_enter(event):
             do_login()
-        
+            
         username_entry.bind('<Return>', on_enter)
         
         login_btn = tk.Button(login_window, text="LOGIN", font=('Arial', 12, 'bold'),
@@ -537,8 +559,41 @@ class EDMBankApp:
         self.show_message("Statistics", "Spending statistics", "info")
     
     def show_profile(self):
-        self.show_message("Profile", f"User: {self.logged_in_user}", "info")
+        # MODIFIED: Navigate to the profile page
+        self.switch_view("profile")
+        
+    def balance_to_float(self, balance_str):
+        """Converts a balance string (e.g., '1.250,00 RON') to a float."""
+        try:
+            # Remove currency and thousand separator, replace decimal comma
+            return float(balance_str.upper().replace(' RON', '').replace('.', '').replace(',', '.'))
+        except ValueError:
+            return 0.0
 
+    def float_to_balance(self, amount_float):
+        """Converts a float to a balance string (e.g., '1.250,00 RON')."""
+        
+        # Set locale for correct number formatting (assuming Romanian/European standard for the format)
+        try:
+            # Try to set Romanian locale for correct format
+            locale.setlocale(locale.LC_ALL, 'ro_RO.UTF-8')
+        except locale.Error:
+            # Fallback for systems where 'ro_RO.UTF-8' is not available
+            try:
+                locale.setlocale(locale.LC_ALL, 'C')
+            except locale.Error:
+                pass
+                
+        # Manual format fallback (thousands dot, decimal comma):
+        # Format to two decimal places, then handle custom separators
+        formatted = "{:,.2f}".format(amount_float).replace(",", "X").replace(".", ",").replace("X", ".")
+        return f"{formatted} RON"
+
+    def update_balance_display(self):
+        """Updates the label that shows the current balance."""
+        if hasattr(self, 'sold_label'):
+             self.sold_label.config(text=self.sold_amount)
+    
 # --------------------------------------------------------------------------
     def show_transfer_popup(self):
         transfer_window = tk.Toplevel(self.main)
@@ -588,24 +643,40 @@ class EDMBankApp:
 
             try:
                 # Simple validation for amount
-                float(amount.replace(',', '.')) 
+                transfer_amount = float(amount.replace(',', '.')) 
                 
+                # Check 1: Is the amount valid?
+                if transfer_amount <= 0:
+                    self.show_message("Error", "Transfer amount must be positive.", "error")
+                    return
+                
+                # --- EXECUTE SUBTRACTION (Simplified without error handling) ---
+                current_balance = self.balance_to_float(self.sold_amount)
+                
+                if transfer_amount > current_balance:
+                    self.show_message("Error", "Insufficient funds for this transfer.", "error")
+                    return
+                
+                new_balance = current_balance - transfer_amount
+                self.sold_amount = self.float_to_balance(new_balance)
+                self.update_balance_display()
+
                 # Close the pop-up and show confirmation
                 transfer_window.destroy()
                 self.show_message("Success", 
-                                  f"Transferring {amount} RON to {username}...", 
+                                  f"Transferring {transfer_amount:,.2f} RON to {username}...", 
                                   "info")
             except ValueError:
                 self.show_message("Error", "Invalid amount entered. Please use numbers.", "error")
         
         # SEND Button
         send_btn = tk.Button(button_frame, text="SEND", font=('Arial', 12, 'bold'),
-                             bg='#52796f', fg='white', command=attempt_transfer, width=10)
+                              bg='#52796f', fg='white', command=attempt_transfer, width=10)
         send_btn.pack(side='left', padx=10)
         
         # EXIT Button
         exit_btn = tk.Button(button_frame, text="EXIT", font=('Arial', 12),
-                             bg='#354f52', fg='white', command=transfer_window.destroy, width=10)
+                              bg='#354f52', fg='white', command=transfer_window.destroy, width=10)
         exit_btn.pack(side='left', padx=10)
 
     def is_valid_ro_iban(self, iban):
@@ -637,14 +708,14 @@ class EDMBankApp:
         transfer_window.grab_set() # Modal window: forces focus on this window
         
         # --- Recipient IBAN Input ---
-        tk.Label(transfer_window, text="Recipient IBAN (RO...):", font=('Arial', 12, 'bold'),
+        tk.Label(transfer_window, text="Recipient IBAN (RO...):", font=('Tex Gyre Chorus', 20, 'bold'),
                  bg='#cad2c5', fg='#354f52').pack(pady=(15, 2), padx=10, anchor='w')
         
         iban_entry = tk.Entry(transfer_window, font=('Arial', 12), relief='flat', bd=2, bg='white')
         iban_entry.pack(pady=(0, 10), padx=20, fill='x')
         
         # --- Transfer Sum Input ---
-        tk.Label(transfer_window, text="Sum you want to transfer:", font=('Arial', 12, 'bold'),
+        tk.Label(transfer_window, text="Sum you want to transfer:", font=('Tex Gyre Chorus', 20, 'bold'),
                  bg='#cad2c5', fg='#354f52').pack(pady=(5, 2), padx=10, anchor='w')
         
         sum_entry = tk.Entry(transfer_window, font=('Arial', 12), relief='flat', bd=2, bg='white')
@@ -656,64 +727,52 @@ class EDMBankApp:
         
         def attempt_iban_transfer():
             iban = iban_entry.get().strip()
-            amount_str = sum_entry.get().strip().replace(',', '.') 
+            amount = sum_entry.get().strip()
             
-            if not iban or not amount_str:
-                self.show_message("Error", "Please fill in both IBAN and Amount.", "warning")
+            if not iban or not amount:
+                self.show_message("Error", "Please fill in both fields.", "warning")
                 return
-
-            # IBAN Specific Validation
+            
             if not self.is_valid_ro_iban(iban):
-                self.show_message("Error", "Invalid Romanian IBAN format (Must be 24 characters, starting with 'RO').", "error")
+                self.show_message("Error", "Incorrect IBAN format (must start with RO and be 24 characters).", "error")
                 return
-            
-            try:
-                transfer_amount = float(amount_str)
-                current_balance = self.balance_to_float(self.sold_amount)
                 
-                # Check 1: Is the amount valid?
+            try:
+                transfer_amount = float(amount.replace(',', '.')) 
+                
                 if transfer_amount <= 0:
                     self.show_message("Error", "Transfer amount must be positive.", "error")
                     return
                 
-                # Check 2: Insufficient funds?
+                current_balance = self.balance_to_float(self.sold_amount)
+                
                 if transfer_amount > current_balance:
                     self.show_message("Error", "Insufficient funds for this transfer.", "error")
                     return
                 
-                # --- EXECUTE SUBTRACTION ---
                 new_balance = current_balance - transfer_amount
-                
-                # 1. Update the stored balance string
                 self.sold_amount = self.float_to_balance(new_balance)
-                
-                # 2. Update the GUI display
                 self.update_balance_display()
 
-                # Close the pop-up and show confirmation
                 transfer_window.destroy()
-                
-                # Show confirmation with masked IBAN
-                masked_iban = f"{iban[:4]}...{iban[-4:]}"
                 self.show_message("Success", 
-                                  f"Successfully sent {transfer_amount:,.2f} RON via IBAN to {masked_iban}.", 
+                                  f"Bank transfer of {transfer_amount:,.2f} RON to IBAN {iban} has been initiated.", 
                                   "info")
-                
             except ValueError:
                 self.show_message("Error", "Invalid amount entered. Please use numbers.", "error")
-        
+
         # SEND Button
         send_btn = tk.Button(button_frame, text="SEND", font=('Arial', 12, 'bold'),
-                             bg='#52796f', fg='white', command=attempt_iban_transfer, width=10)
+                              bg='#52796f', fg='white', command=attempt_iban_transfer, width=10)
         send_btn.pack(side='left', padx=10)
         
         # EXIT Button
         exit_btn = tk.Button(button_frame, text="EXIT", font=('Arial', 12),
-                             bg='#354f52', fg='white', command=transfer_window.destroy, width=10)
+                              bg='#354f52', fg='white', command=transfer_window.destroy, width=10)
         exit_btn.pack(side='left', padx=10)
 
 # --- Application Launch ---
 if __name__ == "__main__":
     root = tk.Tk()
-    app = EDMBankApp(root)
+    app = EDMBankApp(root) 
     root.mainloop()
