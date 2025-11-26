@@ -25,6 +25,7 @@ for i in range(50):
     email = UserName + "@gmail.com"
     email = email.replace(" ","")
     CardDigit = random.randrange(10**15,10**16-1)
+    IBAN = "IBANEDM" + random.randrange(10**29, 10**30-1)
 
     CVV = random.randrange(10**2,10**3)
 
@@ -54,6 +55,24 @@ for i in range(50):
         "Expiry_date" : expiry_date,
         "Sold" : Sum,
         "Email" : email,
-        "Istoric" : []
+        "Iban" : IBAN,
+        "History" : []
     }
     db.collection("Users").document(UserName).set(user_data)
+
+
+    # Cream un collection unde se salveaza
+    # problema trimisa de un utilizator, numele si emailul
+problema = "blablabla am o problema ajutor"
+utilizator = "MamaMea67"
+email_prob = "mamaMea67@gmail.com"
+
+Problems = {
+    "Name" : utilizator,
+    "Email" : email_prob,
+    "Support Request" : problema
+}
+db.collection("Support_requests").document(utilizator).set(Problems)
+
+
+    # de rezolvat history in DataBase.py

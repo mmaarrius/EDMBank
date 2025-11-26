@@ -11,7 +11,7 @@ from user_management.user import User
 from user_management.credit_card import Card
 from user_management.user_credentials import UserCredentials
 from user_management.payment_details import PaymentsHistory
-from exceptions import *
+from user_management.payment_details import Payment
 
 class Database:
     def __init__(self):
@@ -24,6 +24,30 @@ class Database:
             firebase_admin.initialize_app(cred)
         self.db = firestore.client()
 
+    def history_to_databse_format(self, history : PaymentsHistory):
+        hist = []
+        for payment in history.history:
+            amount = payment.amount
+            rec = payment.receiver
+            send = payment.sender
+            sentence = (f"{send} -> {amount} -> {rec}")
+            hist.append(sentence)
+        return hist
+    
+    def database_to_class_format(self, history_sentence : list[str]) -> PaymentsHistory:
+        history = PaymentsHistory()
+        for sentence in history_sentence:
+            try:
+                sender, amount, receiver = sentence.split(" -> ")
+                payment = Payment(
+                    amount = (amount),
+                    sender = sender,
+                    receiver = receiver
+                )
+                history.add_payment(payment)
+            except ValueError:
+                continue
+        return history
 
     def add_user(self, user : User):
         """Add a new user to the database."""
@@ -31,8 +55,10 @@ class Database:
         username = user.credentials.username
         CardDigit = user.card.number
         CVV = user.card.cvv
+        IBAN = user.card.IBAN
         email = user.credentials.email
         history = user.payment_history
+        history = self.history_to_databse_format(history)
         sum = user.balance
     
         Password_bytes = str(password).encode()
@@ -50,7 +76,8 @@ class Database:
              #"Expiry_date" : expiry_date,
              "Sold" : sum,
              "Email" : email,
-             "Istoric" : []
+             "Iban" : IBAN,
+             "History" : history
          }
         self.db.collection("Users").document(username).set(user_data)
 
@@ -81,7 +108,9 @@ class Database:
         elif date == 5:
             return doc.get("Email")
         elif date == 6:
-            return doc.get("Istoric")
+            return doc.get("History")
+        elif date == 7:
+            return doc.get("Iban")   
         else:
             return None
         
@@ -111,8 +140,10 @@ class Database:
         hashed_pass = data.get("Password_hash")
         cardNr = data.get("Card_Number")
         cvv = data.get("CVV")
-        #exp_date = data.get("Expiry_date")
-        history = data.get("Istoric")
+        IBAN = data.get("Iban")
+        exp_date = data.get("Expiry_date")
+        history = data.get("History")
+        history = self.database_to_class_format(history)
 
         credentials = UserCredentials(
             username = username,
@@ -122,15 +153,16 @@ class Database:
 
         card = Card(
             number = cardNr,
-            cvv = cvv
-            #expiry_date = exp_date
+            cvv = cvv,
+            expiry_date = exp_date,
+            IBAN = IBAN
         )
-        history_formated = PaymentsHistory(history)
+        #history_formated = PaymentsHistory()
 
         user = User(
             credentials=credentials,
             balance=balance,
-            payment_history=history_formated,
+          #  payment_history=history_formated,
             card=card
         )
 
