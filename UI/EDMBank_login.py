@@ -117,8 +117,6 @@ class EDMBankLogin:
         self.username_entry = tk.Entry(username_frame, font=('Courier', 25), 
                                        bg='#2f3e46', fg='white', relief='flat')
         self.username_entry.pack(fill='x', pady=(10, 0), ipady=8)
-        # default username for testing
-        self.username_entry.insert(0, "POPESCU IRIS-MARIA")
         
         # bind FocusIn to show alphanumeric keyboard
         self.username_entry.bind("<FocusIn>", lambda e: self.set_active_field('username'))
@@ -255,23 +253,38 @@ class EDMBankLogin:
 
     def check_password(self):
         self.hide_keyboards() # hide keyboards on login attempt
-        # if password is correct call the success callback
-        if self.entered_password == self.correct_password:
-            # get username in uppercase without leading/trailing spaces
-            username = self.username_entry.get().strip().upper()
-            # if username written
-            if username:
-                self.main.withdraw()  # hide login window
-                self.on_success_callback(username, self.main, self.bank_service)
-            else:
-                messagebox.showerror("Error", "Please enter a username!", parent=self.main)
-                # If error, re-show username keyboard
-                self.set_active_field('username')
+        username = self.username_entry.get().strip()
+        password = self.entered_password
+
+        if not username:
+            messagebox.showerror("Error", "Please enter a username!", parent=self.main)
+            self.set_active_field('username')
+            return
+        
+        if self.bank_service.checkUserLogin(username, password):
+            self.main.withdraw()
+            self.on_success_callback(username, self.main, self.bank_service)
         else:
-            messagebox.showerror("Login Failed", "Incorrect password or username! Please try again.", parent=self.main)
+            messagebox.showerror("Login Failed", "Incorrect username or password!", parent=self.main)
             self.clear_password()
-            # If error, re-show password keyboard
             self.set_active_field('password')
+        # # if password is correct call the success callback
+        # if self.entered_password == self.correct_password:
+        #     # get username in uppercase without leading/trailing spaces
+        #     username = self.username_entry.get().strip().upper()
+        #     # if username written
+        #     if username:
+        #         self.main.withdraw()  # hide login window
+        #         self.on_success_callback(username, self.main, self.bank_service)
+        #     else:
+        #         messagebox.showerror("Error", "Please enter a username!", parent=self.main)
+        #         # If error, re-show username keyboard
+        #         self.set_active_field('username')
+        # else:
+        #     messagebox.showerror("Login Failed", "Incorrect password or username! Please try again.", parent=self.main)
+        #     self.clear_password()
+        #     # If error, re-show password keyboard
+        #     self.set_active_field('password')
  
     # --------------------------------------------------------------------------
 

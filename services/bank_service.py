@@ -28,16 +28,10 @@ class BankService:
         self.db.modify_user(user)
     
     def checkUserLogin(self, username, Password):
-        doc_ref = self.db.collection("Users").document(username)
-        doc = doc_ref.get()
-
-        if not doc.exists:
-            return False
-        stored_hash = doc.to_dict().get("Password_hash")
-        if bcrypt.checkpw(Password.encode(), stored_hash.encode()):
+        if self.db.checkUserLogin(username, Password):
             return True
         else:
-            return False  
+            return False
         
     def is_card_unique(self, card_number):
         """
