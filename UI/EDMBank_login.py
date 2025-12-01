@@ -31,6 +31,7 @@ class EDMBankLogin:
         self.main.minsize(300, 500)
         self.main.configure(bg="#354f52")
 
+
         # password and field state
         self.correct_password = "000000"
         self.entered_password = ""
