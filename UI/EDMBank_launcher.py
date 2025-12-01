@@ -1,14 +1,21 @@
 import sys
 import os
+import tkinter as tk # Importul tk este mutat aici pentru a fi disponibil
+from tkinter import TclError
 
 # Add the project's root directory to the Python path
 sys.path.append(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-import tkinter as tk
 from EDMBank_login import EDMBankLogin
 from EDMBank_main import EDMBankApp
 from services.bank_service import BankService
 from DataBase.DataBase import Database
+
+def apply_dpi_fix(root):
+    try:
+        root.tk.call('tk', 'scaling', 1.0) 
+    except TclError:
+        pass
 
 def run_login_app(root, bank_service: BankService):
     # passes start_main_app as the success callback
@@ -27,6 +34,9 @@ def restart_app(current_root, bank_service):
     
     # Create a new root for the login app
     new_root = tk.Tk()
+    
+    apply_dpi_fix(new_root)
+
     new_root.geometry(f"{width}x{height}+{x}+{y}")
     new_root.minsize(300, 500)
     
@@ -46,6 +56,9 @@ def start_main_app(username, login_window, bank_service: BankService):
     
     # create a new main window in the EXACT same position and size
     main_root = tk.Tk()
+
+    apply_dpi_fix(main_root)
+
     main_root.geometry(f"{width}x{height}+{x}+{y}")
     main_root.minsize(300, 500)
     
@@ -60,6 +73,8 @@ def start_main_app(username, login_window, bank_service: BankService):
 # entry point
 if __name__ == "__main__":
     root = tk.Tk()
+    
+    apply_dpi_fix(root)
 
     db = Database()
     bank_service = BankService(db)
