@@ -245,6 +245,12 @@ class EDMBankRegister:
         if not all([username, email, password, confirm_password]):
             messagebox.showerror("Registration Error", "You must complete all the requested fields", parent=self.main)
             return
+        
+        # check if the username is unique
+        if not self.bank_service.is_username_unique(username):
+            messagebox.showerror("Registration Error", "This username is already taken.", parent=self.main)
+            self.username_entry.focus_set()
+            return
 
         # password match
         if password != confirm_password:
@@ -266,11 +272,12 @@ class EDMBankRegister:
         # if all validations pass, proceed with registration
         credentials = UserCredentials(username, password, email)
         pay_history = PaymentsHistory()
-        CardDigit = random.randrange(10**15,10**16-1)
+        user_card = Card.generateCard()
 
-        CVV = random.randrange(10**2,10**3)
-        card = Card(CardDigit, CVV)
-        user = User(credentials, 0, pay_history, card)
+        while (self.bank_service.is_card_unique(user_card.number) == False):
+            user_card = Card.generateCard()
+
+        user = User(credentials, 0, pay_history, user_card)
         self.bank_service.add_user(user)
         messagebox.showinfo("Registration Successful", 
                             f"Account created for {username} ({email}). Proceeding to main app.", 

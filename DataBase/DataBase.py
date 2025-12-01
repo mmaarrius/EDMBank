@@ -5,6 +5,7 @@ import random
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import firestore
+from google.cloud.firestore_v1 import FieldFilter
 from faker import Faker
 from datetime import datetime
 from user_management.user import User
@@ -12,6 +13,7 @@ from user_management.credit_card import Card
 from user_management.user_credentials import UserCredentials
 from user_management.payment_details import PaymentsHistory
 from user_management.payment_details import Payment
+from exceptions import *
 
 class Database:
     def __init__(self):
@@ -40,7 +42,7 @@ class Database:
             try:
                 sender, amount, receiver = sentence.split(" -> ")
                 payment = Payment(
-                    amount = (amount),
+                    amount = float(amount),
                     sender = sender,
                     receiver = receiver
                 )
@@ -65,7 +67,7 @@ class Database:
         salt = bcrypt.gensalt()
         Password = bcrypt.hashpw(Password_bytes, salt)
         Password = Password.decode()
-        #expiry_date = user.card.expiry_date
+        expiry_date = user.card.expiry_date
 
 
         user_data = {
@@ -73,7 +75,7 @@ class Database:
              "Password_hash" : Password,
              "Card_Number" : CardDigit,
              "CVV" : CVV,
-             #"Expiry_date" : expiry_date,
+             "Expiry_date" : expiry_date,
              "Sold" : sum,
              "Email" : email,
              "Iban" : IBAN,
@@ -101,8 +103,8 @@ class Database:
             return doc.get("Card_Number")
         elif date == 2:
             return doc.get("CVV")
-        # elif date == 3:
-        #     return doc.get("Expiry_date")
+        elif date == 3:
+            return doc.get("Expiry_date")
         elif date == 4:
             return doc.get("Sold")
         elif date == 5:
@@ -133,7 +135,7 @@ class Database:
         if not doc.exists:
             raise AccountNotFoundError(f"Account '{username}' does not exist.")
         
-        data = doc.to_dict
+        data = doc.to_dict()
 
         email = data.get("Email")
         balance = data.get("Sold")
@@ -154,16 +156,27 @@ class Database:
         card = Card(
             number = cardNr,
             cvv = cvv,
-            expiry_date = exp_date,
-            IBAN = IBAN
+            IBAN = IBAN,
+            expiry_date=exp_date
         )
-        #history_formated = PaymentsHistory()
 
         user = User(
             credentials=credentials,
             balance=balance,
-          #  payment_history=history_formated,
+            payment_history=history,
             card=card
         )
 
         return user
+        
+
+    def card_exists(self, card_number: str) -> bool:
+        """
+        Check if a generated card number already exists in the database.
+        """
+        users_ref = self.db.collection("Users")
+        query = users_ref.where(filter=FieldFilter("Card_Number", "==", card_number)).get()
+
+        # If query is not empty, card exists
+        return len(query) > 0
+
