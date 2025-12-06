@@ -52,7 +52,7 @@ class EDMBankApp:
     
         self.is_large_screen = False
         self.logged_in_user = current_user.credentials.username
-        self.logged_in_user_email = f"{self.logged_in_user.lower().replace(' ', '').replace('-', '')}@edmbank.com"
+        self.logged_in_user_email = current_user.credentials.email
         
         self.card_number = str(self.current_user.card.number)
         self.card_cvv = str(self.current_user.card.cvv)
@@ -446,9 +446,10 @@ class EDMBankApp:
             self.content_frame.grid_columnconfigure(0, weight=1)
             try:
                 EDMBankContact(self.content_frame, 
-                               self.logged_in_user, 
-                               self.logged_in_user_email, 
-                               self.switch_view)
+                               self.current_user, 
+                               self.bank_service,
+                               self.switch_view,
+                               self.ui)
             except Exception as e:
                 self.show_message("Error", f"Could not load contact view: {e}", "error")
                 lbl = tk.Label(self.content_frame, text=f"Error Loading Contact View: {e}", bg="#cad2c5", fg="red")
@@ -461,7 +462,8 @@ class EDMBankApp:
                 EDMBankProfile(self.content_frame, 
                                self.logged_in_user, 
                                self.logged_in_user_email,
-                               self.switch_view) # pass self.switch_view as the callback
+                               self.switch_view,
+                               self.ui) # pass self.switch_view as the callback
             except Exception as e:
                 self.show_message("Error", f"Could not load profile view: {e}", "error")
                 lbl = tk.Label(self.content_frame, text=f"Error Loading Profile View: {e}", bg="#cad2c5", fg="red")
@@ -471,8 +473,8 @@ class EDMBankApp:
             self.content_frame.grid_columnconfigure(0, weight=1)
             try:
                 EDMBankSettings(self.content_frame, 
-                               self.logged_in_user, 
-                               self.logged_in_user_email,
+                               self.current_user, 
+                               self.bank_service,
                                self.switch_view,
                                self.ui) 
             except Exception as e:
@@ -775,7 +777,7 @@ class EDMBankApp:
                     return
                 
                 # Perform deposit
-                self.bank_service.add_money(self.current_user, transfer_amount)
+                self.bank_service.add_money(self.current_user, transfer_amount, holder)
                 
                 # Update UI
                 self.sold_amount = self.float_to_balance(self.current_user.balance)
@@ -852,7 +854,10 @@ class EDMBankApp:
     def update_balance_display(self):
         """Updates the label that shows the current balance."""
         if hasattr(self, 'sold_label'):
-            self.sold_label.config(text=self.sold_amount)
+            try:
+                self.sold_label.config(text=self.sold_amount)
+            except tk.TclError:
+                pass # Widget destroyed (user likely navigated away from home)
     
     def show_transfer_popup(self):
         transfer_window = tk.Toplevel(self.main)

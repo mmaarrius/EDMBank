@@ -13,6 +13,7 @@ from user_management.credit_card import Card
 from user_management.user_credentials import UserCredentials
 from user_management.payment_details import PaymentsHistory
 from user_management.payment_details import Payment
+from user_management.request import Request
 from exceptions import *
 
 class Database:
@@ -208,4 +209,14 @@ class Database:
 
         # If query is not empty, card exists
         return len(query) > 0
+
+    def add_request(self, request: Request):
+        """
+        Adds a support request to the 'Requests' collection in Firestore.
+        """
+        try:
+            requests_ref = self.db.collection("Requests")
+            requests_ref.document(request.request_id).set(request.to_dict())
+        except Exception as e:
+            raise RequestError(f"Failed to add request to database: {e}")
 

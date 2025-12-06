@@ -150,4 +150,5 @@ class AlphaNumericKeyboard:
     # --------------------------------------------------------------------------
     # handle submit (Enter key)
     def submit(self):
-        self.parent_frame.grid_remove()
+        # Generate a Return event on the target entry so that bound callbacks are triggered
+        self.target_entry.event_generate('<Return>')

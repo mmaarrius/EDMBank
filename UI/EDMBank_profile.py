@@ -6,19 +6,19 @@ import re
 from EDMBank_keyboard import AlphaNumericKeyboard 
 
 class EDMBankProfile:
-    def __init__(self, parent_frame, logged_in_user, logged_in_email, switch_view_callback):
+    def __init__(self, parent_frame, logged_in_user, logged_in_email, switch_view_callback, ui_helper):
         self.parent_frame = parent_frame
-        self.logged_in_user = logged_in_user.upper() # "POPESCU IRIS-MARIA"
+        self.logged_in_user = logged_in_user
         self.logged_in_email = logged_in_email 
         self.switch_view_callback = switch_view_callback
+        self.ui = ui_helper
         
         # initial data
-        self.last_name, self.first_name = self._split_name(self.logged_in_user)
+        # self.last_name, self.first_name = self._split_name(self.logged_in_user)
         self.current_password = "old_password123"
         
         # tkinter variables for input fields
-        self.first_name_var = tk.StringVar(value=self.first_name)
-        self.last_name_var = tk.StringVar(value=self.last_name)
+        self.username_var = tk.StringVar(value=self.logged_in_user)
         self.email_var = tk.StringVar(value=self.logged_in_email)
         
         # variables for image
@@ -26,8 +26,7 @@ class EDMBankProfile:
         self.profile_photo_tk = None 
         
         # keyboard variables
-        self.first_name_entry = None
-        self.last_name_entry = None
+        self.username_entry = None
         self.keyboard_container = None
         self.keyboard_instance = None
         self.keyboard_visible = False
@@ -39,27 +38,19 @@ class EDMBankProfile:
 
     def _set_styles(self):
         style = ttk.Style()
-        style.configure('Profile.TLabel', background='#cad2c5', foreground='#354f52', font=('Tex Gyre Chorus', 25, 'bold'))
-        style.configure('Profile.TEntry', font=('Courier', 20), fieldbackground='white')
-        style.configure('Profile.TButton',background="#9db3a7", foreground='#2f3e46', font=('Courier', 18, 'bold'), padding=5)
+        style.configure('Profile.TLabel', background='#cad2c5', foreground='#354f52', font=self.ui.get_font('Tex Gyre Chorus', 20, 'bold'))
+        style.configure('Profile.TEntry', font=self.ui.get_font('Courier', 14), fieldbackground='white')
+        style.configure('Profile.TButton',background="#9db3a7", foreground='#2f3e46', font=self.ui.get_font('Courier', 16, 'bold'), padding=self.ui.w_pct(0.5))
 
         # action button (SAVE)
-        style.configure('Action.TButton', foreground='white', background='#52796f', font=('Courier', 20, 'bold'), padding=10)
+        style.configure('Action.TButton', foreground='white', background='#52796f', font=self.ui.get_font('Courier', 18, 'bold'), padding=self.ui.w_pct(1))
         style.map('Action.TButton', background=[('active', '#84a98c')])
         
         # exit button
-        style.configure('Exit.TButton', foreground='white', background='#354f52', font=('Courier', 20, 'bold'), padding=10)
+        style.configure('Exit.TButton', foreground='white', background='#354f52', font=self.ui.get_font('Courier', 18, 'bold'), padding=self.ui.w_pct(1))
         style.map('Exit.TButton', background=[('active', '#2f3e46')])
 
     # ------------------------------------------------------------------------------
-
-    def _split_name(self, full_name):
-        parts = full_name.split()
-        if len(parts) >= 2:
-            last_name = parts[0]
-            first_name = " ".join(parts[1:])
-            return last_name, first_name
-        return full_name, "" 
 
     # ------------------------------------------------------------------------------
 
@@ -68,59 +59,57 @@ class EDMBankProfile:
         for widget in self.parent_frame.winfo_children():
             widget.destroy()
             
-        main_content = tk.Frame(self.parent_frame, bg="#cad2c5", padx=20, pady=20)
+        main_content = tk.Frame(self.parent_frame, bg="#cad2c5", padx=self.ui.w_pct(2), pady=self.ui.h_pct(2))
         main_content.pack(fill='both', expand=True)
 
-        tk.Label(main_content, text="MY PROFILE", font=('Arial', 40, 'bold'),
-                 bg='#cad2c5', fg='#2f3e46').pack(pady=(20, 60))
+        tk.Label(main_content, text="MY PROFILE", font=self.ui.get_font('Arial', 32, 'bold'),
+                 bg='#cad2c5', fg='#2f3e46').pack(pady=(self.ui.h_pct(2), self.ui.h_pct(6)))
         
         details_frame = tk.Frame(main_content, bg="#cad2c5")
-        details_frame.pack(fill='x', pady=10)
+        details_frame.pack(fill='x', pady=self.ui.h_pct(1))
         
         # configure columns for image (left) and fields (right)
         details_frame.grid_columnconfigure(0, weight=1) 
         details_frame.grid_columnconfigure(1, weight=3) 
 
         # profile picture section
-        self.image_canvas = tk.Canvas(details_frame, width=150, height=150, bg="lightgray", highlightthickness=0, borderwidth=2, relief='groove')
-        self.image_canvas.grid(row=0, column=0, padx=10, pady=10, sticky='n')
+        img_size = self.ui.get_size(150)
+        self.image_canvas = tk.Canvas(details_frame, width=img_size, height=img_size, bg="lightgray", highlightthickness=0, borderwidth=2, relief='groove')
+        self.image_canvas.grid(row=0, column=0, padx=self.ui.w_pct(1), pady=self.ui.h_pct(1), sticky='n')
         self.load_profile_image() 
         
         ttk.Button(details_frame, text="Change Picture", command=self.change_profile_picture,
-                   style='Profile.TButton').grid(row=1, column=0, padx=10, pady=5, sticky='n')
+                   style='Profile.TButton').grid(row=1, column=0, padx=self.ui.w_pct(1), pady=self.ui.h_pct(0.5), sticky='n')
 
         fields_frame = tk.Frame(details_frame, bg="#cad2c5")
-        fields_frame.grid(row=0, column=1, rowspan=2, padx=10, sticky='nsew')
+        fields_frame.grid(row=0, column=1, rowspan=2, padx=self.ui.w_pct(1), sticky='nsew')
         fields_frame.grid_columnconfigure(1, weight=1)
         
-        self.first_name_entry = self._create_field(fields_frame, "First Name:", self.first_name_var, 0)
-        self.first_name_entry.bind('<FocusIn>', lambda e: self.toggle_keyboard_visibility(self.first_name_entry))
-        self.first_name_entry.config(font=("Courier", 18))
+        self.username_entry = self._create_field(fields_frame, "Username:", self.username_var, 0)
+        self.username_entry.bind('<FocusIn>', lambda e: self.toggle_keyboard_visibility(self.username_entry))
+        self.username_entry.config(font=self.ui.get_font("Courier", 16))
 
-        self.last_name_entry = self._create_field(fields_frame, "Last Name:", self.last_name_var, 1)
-        self.last_name_entry.bind('<FocusIn>', lambda e: self.toggle_keyboard_visibility(self.last_name_entry))
-        self.last_name_entry.config(font=("Courier", 18))
         # email is read-only, no keyboard binding
-        self._create_field(fields_frame, "Email:", self.email_var, 2, readonly=True).config(font=("Courier", 15))
+        self._create_field(fields_frame, "Email:", self.email_var, 1, readonly=True).config(font=self.ui.get_font("Courier", 13))
         
         ttk.Button(fields_frame, text="Change Password", command=self.change_password_popup,
-                   style='Profile.TButton').grid(row=3, column=0, columnspan=2, pady=15, sticky='ew', padx=10)
+                   style='Profile.TButton').grid(row=2, column=0, columnspan=2, pady=self.ui.h_pct(1.5), sticky='ew', padx=self.ui.w_pct(1))
 
         button_frame = tk.Frame(main_content, bg='#cad2c5')
-        button_frame.pack(pady=20, fill='x')
+        button_frame.pack(pady=self.ui.h_pct(2), fill='x')
         
         ttk.Button(button_frame, text="SAVE CHANGES", command=self.save_changes,
-                   style='Action.TButton').pack(side='left', fill='x', expand=True, padx=10)
+                   style='Action.TButton').pack(side='left', fill='x', expand=True, padx=self.ui.w_pct(1))
         
         ttk.Button(button_frame, text="EXIT", command=self.exit_view,
-                   style='Exit.TButton').pack(side='right', fill='x', expand=True, padx=10)
+                   style='Exit.TButton').pack(side='right', fill='x', expand=True, padx=self.ui.w_pct(1))
         
         # keyboard container (always at the bottom of the main content)
         self.keyboard_container = tk.Frame(main_content, bg="#cad2c5")
-        self.keyboard_container.pack(fill='x', pady=(10, 0))
+        self.keyboard_container.pack(fill='x', pady=(self.ui.h_pct(1), 0))
 
-        # initialize the keyboard instance (default target is first name)
-        self.keyboard_instance = AlphaNumericKeyboard(self.keyboard_container, self.first_name_entry)
+        # initialize the keyboard instance (default target is username)
+        self.keyboard_instance = AlphaNumericKeyboard(self.keyboard_container, self.username_entry)
         
         # hide the keyboard initially
         self.keyboard_container.pack_forget()
@@ -128,29 +117,31 @@ class EDMBankProfile:
     # ------------------------------------------------------------------------------
 
     def _create_field(self, parent, label_text, textvariable, row, readonly=False):
-        ttk.Label(parent, text=label_text, style='Profile.TLabel').grid(row=row, column=0, padx=10, pady=5, sticky='w')
+        ttk.Label(parent, text=label_text, style='Profile.TLabel').grid(row=row, column=0, padx=self.ui.w_pct(1), pady=self.ui.h_pct(0.5), sticky='w')
         entry = ttk.Entry(parent, textvariable=textvariable, style='Profile.TEntry')
         if readonly:
             entry.config(state='readonly')
-        entry.grid(row=row, column=1, padx=10, pady=5, sticky='ew')
+        entry.grid(row=row, column=1, padx=self.ui.w_pct(1), pady=self.ui.h_pct(0.5), sticky='ew')
         return entry
     
     # ------------------------------------------------------------------------------
 
     def load_profile_image(self):
         try:
+            img_size = self.ui.get_size(150)
             if os.path.exists(self.profile_image_path):
                 original_image = Image.open(self.profile_image_path)
             else:
                 # placeholder image if file not found
-                original_image = Image.new('RGB', (150, 150), color='#52796f') 
+                original_image = Image.new('RGB', (img_size, img_size), color='#52796f') 
                 
-            resized_image = original_image.resize((150, 150), Image.LANCZOS)
+            resized_image = original_image.resize((img_size, img_size), Image.LANCZOS)
             self.profile_photo_tk = ImageTk.PhotoImage(resized_image)
-            self.image_canvas.create_image(75, 75, image=self.profile_photo_tk, anchor='center')
+            self.image_canvas.create_image(img_size//2, img_size//2, image=self.profile_photo_tk, anchor='center')
         except Exception:
             # fallback text if image loading fails
-            self.image_canvas.create_text(75, 75, text="No Picture", fill='#2f3e46', font=('Arial', 14))
+            img_size = self.ui.get_size(150)
+            self.image_canvas.create_text(img_size//2, img_size//2, text="No Picture", fill='#2f3e46', font=self.ui.get_font('Arial', 14))
 
     # ------------------------------------------------------------------------------
 
@@ -240,25 +231,22 @@ class EDMBankProfile:
     # ------------------------------------------------------------------------------
 
     def save_changes(self):
-        # hide keyboard on submission
+        # hide keyboard on save
         if self.keyboard_visible:
             self.keyboard_container.pack_forget()
             self.keyboard_visible = False
             
-        new_first_name = self.first_name_var.get().strip().upper()
-        new_last_name = self.last_name_var.get().strip().upper()
+        new_username = self.username_var.get().strip()
         
-        if not new_first_name or not new_last_name:
-            messagebox.showerror("Error", "First name and last name cannot be empty.", parent=self.parent_frame)
+        if not new_username:
+            messagebox.showerror("Error", "Username cannot be empty.", parent=self.parent_frame)
             return
             
         # update user data (in a real app, this would be a database call)
-        self.first_name = new_first_name
-        self.last_name = new_last_name
-        self.logged_in_user = f"{new_last_name} {new_first_name}"
+        self.logged_in_user = new_username
         
         messagebox.showinfo("Success", "Profile changes have been saved!", parent=self.parent_frame)
-        self.exit_view() 
+        self.exit_view()
 
     # ------------------------------------------------------------------------------
 
@@ -276,7 +264,7 @@ class EDMBankProfile:
             return
 
         # check if a supported widget in the main view is being focused
-        supported_widgets = (self.first_name_entry, self.last_name_entry)
+        supported_widgets = (self.username_entry,)
         
         if target_widget in supported_widgets:
             # if the keyboard is hidden or the target has changed, show it and update target

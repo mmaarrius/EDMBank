@@ -40,8 +40,6 @@ class EDMBankLogin:
         self.ui = UIHelper(initial_width, initial_height)
 
         # password and field state
-        self.correct_password = "000000"
-        self.entered_password = ""
         self.active_field = 'username'
         
         # Store a reference to the image to prevent it from being garbage collected
@@ -54,11 +52,7 @@ class EDMBankLogin:
         # Keypad container (will hold either numeric or alphanumeric keyboard)
         self.keyboard_container = tk.Frame(self.main_container, bg="#354f52")
         
-        # Separate frames for each keyboard type
-        self.numeric_frame = tk.Frame(self.keyboard_container, bg="#354f52")
         self.alphanum_frame = tk.Frame(self.keyboard_container, bg="#354f52")
-        
-        self.create_numeric_keypad(self.numeric_frame)
         
         # create login interface
         self.create_login_interface()
@@ -129,14 +123,14 @@ class EDMBankLogin:
         password_display_frame.pack(pady=self.ui.h_pct(2), fill='x', padx=self.ui.w_pct(9))
         tk.Label(password_display_frame, text="Enter Password:", font=self.ui.get_font('Tex Gyre Chorus', 40), 
                  bg="#354f52", fg="white").pack(anchor='w')
-        # password display (shows • for each entered digit)
-        self.password_display = tk.Label(password_display_frame, text="", 
-                                         font=self.ui.get_font('Arial', 24, 'bold'), bg="#2f3e46", 
-                                         fg="#cad2c5", width=15, height=2)
-        self.password_display.pack(fill='x', pady=(self.ui.h_pct(1), 0))
+        # password entry
+        self.password_entry = tk.Entry(password_display_frame, font=self.ui.get_font('Courier', 25), 
+                                       bg='#2f3e46', fg='white', relief='flat', show="*")
+        self.password_entry.pack(fill='x', pady=(self.ui.h_pct(1), 0), ipady=self.ui.h_pct(0.8))
         
-        # bind click to show numeric keypad
-        self.password_display.bind("<Button-1>", lambda e: self.set_active_field('password'))
+        # bind FocusIn to show alphanumeric keyboard
+        self.password_entry.bind("<FocusIn>", lambda e: self.set_active_field('password'))
+        self.password_entry.bind("<Return>", lambda e: self.check_password())
         
         # initialize alphanumeric keyboard (must be done after username_entry is created)
         self.alphanum_keyboard = AlphaNumericKeyboard(self.alphanum_frame, self.username_entry, self.ui)
@@ -154,110 +148,38 @@ class EDMBankLogin:
         self.active_field = field_name
         
         # hide both frames first
-        self.numeric_frame.pack_forget()
         self.alphanum_frame.pack_forget()
         
         # reset visual state
-        self.password_display.config(relief='flat', bg='#2f3e46')
+        if hasattr(self, 'password_entry'):
+            self.password_entry.config(relief='flat')
         self.username_entry.config(relief='flat') 
         
+        target_entry = None
         if field_name == 'password':
-            # highlight active field and show numeric keypad
-            self.password_display.config(relief='sunken', bg='#2f3e46')
-            self.numeric_frame.pack(fill='both', expand=True)
-            self.main_container.focus_set() # Remove focus from entry widget
-            
+            target_entry = self.password_entry
         elif field_name == 'username':
-            # set target entry for alphanumeric keyboard and show it
-            self.alphanum_keyboard.target_entry = self.username_entry
+            target_entry = self.username_entry
+            
+        if target_entry:
+            self.alphanum_keyboard.target_entry = target_entry
             self.alphanum_frame.pack(fill='both', expand=True)
-            self.username_entry.focus_set() # Keep focus on entry widget
-            self.username_entry.config(relief='sunken')
+            target_entry.focus_set()
+            target_entry.config(relief='sunken')
             
     # hides all keyboards
     def hide_keyboards(self):
-        self.numeric_frame.pack_forget()
         self.alphanum_frame.pack_forget()
-        self.password_display.config(relief='flat')
+        self.password_entry.config(relief='flat')
         self.username_entry.config(relief='flat')
         self.active_field = None # no field is active
-    
-    # numeric keypad creation moved to a method
-    def create_numeric_keypad(self, parent):
-        # create 4x3 grid for keypad
-        parent.grid_columnconfigure(0, weight=1)
-        parent.grid_columnconfigure(1, weight=1)
-        parent.grid_columnconfigure(2, weight=1)
-        parent.grid_rowconfigure(0, weight=1)
-        parent.grid_rowconfigure(1, weight=1)
-        parent.grid_rowconfigure(2, weight=1)
-        parent.grid_rowconfigure(3, weight=1)
-        
-        # keypad buttons (0-9, Clear, Enter)
-        buttons = [
-            ('1', 0, 0), ('2', 0, 1), ('3', 0, 2), # the other indices are row, column
-            ('4', 1, 0), ('5', 1, 1), ('6', 1, 2),
-            ('7', 2, 0), ('8', 2, 1), ('9', 2, 2),
-            ('⌫', 3, 0), ('0', 3, 1), ('↵', 3, 2)
-        ]
-        
-        for text, row, col in buttons:
-            if text == '↵':
-                bg_color = '#588157'
-                fg_color = '#cad2c5'
-                command = self.check_password
-                font_style = self.ui.get_font('Courier', 27, 'bold')
-            elif text == '⌫':
-                bg_color = '#6f1d1b'
-                fg_color = '#cad2c5'
-                command = self.clear_password
-                font_style = self.ui.get_font('Courier', 27, 'bold')
-            else:
-                bg_color = '#84a98c'
-                fg_color = '#2f3e46'
-                command = lambda x=text: self.add_digit(x)
-                font_style = self.ui.get_font('Courier', 27, 'bold')
-            
-            btn = tk.Button(parent, text=text, font=font_style,
-                            bg=bg_color, fg=fg_color, relief='flat',
-                            command=command)
-            btn.grid(row=row, column=col, padx=self.ui.w_pct(1), pady=self.ui.h_pct(0.5), sticky='nsew')
-    
-    # --------------------------------------------------------------------------
-
-    # add digit to entered password (max 6 digits)
-    def add_digit(self, digit):
-        # only allow digit entry if password field is active
-        if self.active_field == 'password':
-            if len(self.entered_password) < 6:
-                self.entered_password = self.entered_password + digit
-                self.update_password_display()
-        else:
-            messagebox.showwarning("Input Error", "Please click the Password field to enter your PIN.", parent=self.main)
-
-    # backspace functionality
-    def backspace_password(self):
-        if self.active_field == 'password':
-            self.entered_password = self.entered_password[:-1]
-            self.update_password_display()
-        
-    # clear the entered password (used for total clear, renamed for clarity)
-    def clear_password(self):
-        self.entered_password = ""
-        self.update_password_display()
-    
-    # when digit pressed • appears
-    def update_password_display(self):
-        # show dots for entered digits
-        display_text = "•" * len(self.entered_password)
-        self.password_display.config(text=display_text)
     
     # --------------------------------------------------------------------------
 
     def check_password(self):
         self.hide_keyboards() # hide keyboards on login attempt
         username = self.username_entry.get().strip()
-        password = self.entered_password
+        password = self.password_entry.get()
 
         if not username:
             messagebox.showerror("Error", "Please enter a username!", parent=self.main)
@@ -270,7 +192,7 @@ class EDMBankLogin:
             self.on_success_callback(user, self.main, self.bank_service)
         else:
             messagebox.showerror("Login Failed", "Incorrect username or password!", parent=self.main)
-            self.clear_password()
+            self.password_entry.delete(0, tk.END)
             self.set_active_field('password')
  
     # --------------------------------------------------------------------------

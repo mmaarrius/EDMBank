@@ -1,6 +1,7 @@
 from DataBase.DataBase import Database
 from user_management.user import User
 from user_management.payment_details import Payment
+from user_management.request import Request
 from exceptions import *
 import bcrypt
 
@@ -70,8 +71,13 @@ class BankService:
         user.balance -= amount
         self.db.modify_user(user)
 
-    def add_money(self, user: User, amount: float):
+    def add_money(self, user: User, amount: float, sender_name: str):
         user.balance += amount
+        
+        # Create payment record for the deposit
+        payment = Payment(amount, sender_name, user.credentials.username)
+        user.payment_history.add_payment(payment)
+        
         self.db.modify_user(user)
     
     def checkUserLogin(self, username, Password):
@@ -110,11 +116,29 @@ class BankService:
         """
         return self.db.get_user(username)
 
+    def delete_user(self, username):
+        """
+        Deletes a user from the database.
+        """
+        self.db.delete_user(username)
+
     def listen_to_user_changes(self, username, callback):
         """
         Listen to real-time changes for a user.
         """
         return self.db.listen_to_user(username, callback)
+
+    def create_support_request(self, user: User, title: str, concern: str):
+        """
+        Creates and saves a support request for the user.
+        """
+        request = Request(
+            username=user.credentials.username,
+            email=user.credentials.email,
+            title=title,
+            concern=concern
+        )
+        self.db.add_request(request)
 
 
     
