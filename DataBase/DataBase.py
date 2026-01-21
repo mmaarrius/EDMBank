@@ -21,7 +21,7 @@ class Database:
         self.init_dadabase()
 
     def init_dadabase(self):
-        key_path = os.path.join(os.path.dirname(__file__),"edmbank-7fd19-firebase-adminsdk-fbsvc-85af8bf120.json")
+        key_path = os.path.join(os.path.dirname(__file__),"edmbank-7fd19-firebase-adminsdk-fbsvc-5f69e38cab.json")
         if not firebase_admin._apps:
             cred = credentials.Certificate(key_path)
             firebase_admin.initialize_app(cred)
